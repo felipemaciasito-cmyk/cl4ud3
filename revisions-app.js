@@ -133,6 +133,10 @@ function render(){
  courseSelect.onchange=fillLessons;
  const lessonSelect=document.getElementById("lesson-select");
  lessonSelect.onchange=fillTopics;fillLessons();
+ const requestedCourse=new URLSearchParams(location.search).get("course");
+ const requestedLesson=Number(new URLSearchParams(location.search).get("lesson"));
+ if(requestedCourse&&COURSE_REGISTRY.some(c=>c.id===requestedCourse)){courseSelect.value=requestedCourse;fillLessons();}
+ if(requestedLesson&&Array.from(lessonSelect.options).some(o=>Number(o.value)===requestedLesson)){lessonSelect.value=String(requestedLesson);fillTopics();}
  document.getElementById("entry-form").onsubmit=e=>{
  e.preventDefault();const fd=new FormData(e.currentTarget),course=COURSE_REGISTRY.find(c=>c.id===fd.get("course")),lesson=course.lessons.find(l=>l.id===Number(fd.get("lesson")));
  save({id:uid(),type:fd.get("type"),source:"manuel",courseId:course.id,courseTitle:course.title,lessonId:lesson.id,lessonTitle:lesson.titre,topicTitle:fd.get("topic"),description:fd.get("description").trim(),status:"a-comprendre",createdAt:Date.now(),updatedAt:Date.now(),occurrences:1});
