@@ -25,6 +25,18 @@ function lireEtat() {
   return { faites: [], quiz: null, theme: "auto" };
 }
 
+function enregistrerErreurQuiz(q, choisi) {
+  try {
+    const cle = "cc101fr:revisions:v1";
+    const items = JSON.parse(localStorage.getItem(cle) || "[]");
+    const lecon = LECONS.find((l) => l.id === q.l) || LECONS[0];
+    const existant = items.find((x) => x.source === "quiz" && x.question === q.q && x.status !== "maitrise");
+    if (existant) { existant.occurrences = (existant.occurrences || 1) + 1; existant.updatedAt = Date.now(); localStorage.setItem(cle, JSON.stringify(items)); return; }
+    items.unshift({ id: "quiz-" + Date.now() + "-" + q.l, type: "Erreur", source: "quiz", courseId: "claude-code-101", courseTitle: "Claude Code 101", lessonId: lecon.id, lessonTitle: lecon.titre, topicTitle: lecon.objectifs[0] || lecon.titre, description: "Question : " + q.q + "\nRéponse donnée : " + q.o[choisi] + "\nRéponse attendue : " + q.o[q.b] + "\nExplication : " + q.e, question: q.q, wrongAnswer: q.o[choisi], correctAnswer: q.o[q.b], explanation: q.e, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
+    localStorage.setItem(cle, JSON.stringify(items));
+  } catch (e) {}
+}
+
 function useEtat() {
   const [etat, setEtat] = useState(lireEtat);
   useEffect(() => {
@@ -236,6 +248,7 @@ function Barre({ etat, setEtat, route }) {
         <nav className="barre-nav" aria-label="Navigation principale">
           <a href="#lexique" aria-current={route.vue === "lexique" ? "page" : undefined}><IcLivre taille={18} /><span>Lexique</span></a>
           <a href="#quiz" aria-current={route.vue === "quiz" ? "page" : undefined}><IcDrapeau taille={18} /><span>Quiz</span></a>
+          <a href="revisions.html"><IcCheck taille={18} /><span>Révisions</span></a>
         </nav>
         <button type="button" className="bouton-icone" onClick={() => setEtat((e) => ({ ...e, theme: suivant }))}
           aria-label={`Thème ${NOM_THEME[theme]}. Passer au thème ${NOM_THEME[suivant]}`}>
@@ -511,8 +524,9 @@ function Quiz({ etat, setEtat }) {
 
   const valider = useCallback(() => {
     if (choisi === null || valide[idx]) return;
+    if (choisi !== q.b) recordWrongQuiz(q, choisi);
     setValide((v) => v.map((x, i) => (i === idx ? true : x)));
-  }, [choisi, idx, valide]);
+  }, [choisi, idx, valide, q]);
 
   const suivant = useCallback(() => {
     if (idx < QUIZ.length - 1) { setIdx(idx + 1); return; }
