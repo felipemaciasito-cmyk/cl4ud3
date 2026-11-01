@@ -12,9 +12,16 @@ contenu), pose la question avant d’écrire. Garde ce fichier sous 200 lignes (
 ## Commandes et hooks
 
 - Vérifier le contenu : `node .claude/hooks/verifier-contenu.mjs`. Résultat attendu : « Contenu OK ».
-- Les hooks de `.claude/settings.json` lancent cette vérification tout seuls : au début de chaque
+- **Tests imposés après chaque import** : `node tests/tout.mjs` (1 à 3 minutes). Trois étapes : la
+  vérification du contenu, les règles d’import comparées à `main` (`tests/regles-import.mjs` : rien
+  de supprimé ni déplacé, nouvelles leçons conformes, cache incrémenté, README), puis l’appli dans
+  Chromium avec des profils d’iPad, leçon par leçon (`tests/navigateur.cjs`).
+- Les hooks de `.claude/settings.json` les imposent : vérification du contenu au début de chaque
   session, après chaque modification de `cours.js`, d’un fichier `donnees*.js` ou de `sw.js`, et
-  avant la fin d’une réponse si le contenu a changé. Corrige ce qu’ils signalent, ne les contourne pas.
+  avant la fin d’une réponse si le contenu a changé ; `node tests/tout.mjs` avant chaque `git push`
+  ou création de PR, envoi bloqué s’il échoue. GitHub relance les mêmes tests sur chaque PR
+  (`.github/workflows/tests.yml`). Corrige ce qu’ils signalent, ne les contourne jamais ; si un
+  test ne peut pas tourner, dis-le à l’utilisateur.
 - Régénérer `app.js` après une modification de `app.jsx` (ne modifie jamais `app.js` à la main) :
 
 ```bash
@@ -60,6 +67,7 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   2. Dans `cours.js`, importe-le et ajoute à la fin de `COURS` : `id` (minuscules et tirets,
      définitif), `titre`, `source` (nom exact et adresse du cours d’origine), `...contenu`.
   3. Ajoute le fichier à `FICHIERS` dans `sw.js` et en `modulepreload` dans `index.html`.
+  4. Cite le cours dans `README.md`. Sa première leçon cite le cours précédent (où on en est).
 - L’appli s’adapte seule : un en-tête et un quiz par cours, adresses `#<id>/lecon-1`, lexique commun,
   cours proposé dans le carnet de révision. Rien à changer dans `app.jsx` ni `revisions-app.js`.
 - Un mot du lexique n’est défini qu’une fois, dans le premier cours qui l’utilise.
@@ -93,7 +101,7 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 ```
 
 - `duree` : réaliste sur iPad (les leçons actuelles vont de 8 à 30 minutes).
-- Les titres `h2` et `h3`, comme les objectifs, deviennent les notions proposées dans le carnet de
+- Au moins un titre `h2` par leçon. Les titres `h2` et `h3`, comme les objectifs, deviennent les notions proposées dans le carnet de
   révision : chacun doit se comprendre seul.
 - Mise en forme : `**gras**` pour un terme nouveau à sa première apparition, `` `code` `` pour un
   fichier, une commande, un champ, `*italique*` rarement. Pas d’autre Markdown, pas de HTML, pas
@@ -165,10 +173,10 @@ livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un n
 
 ## 7. Avant de valider un ajout
 
-1. Les hooks ne signalent plus rien, et la commande de vérification affiche « Contenu OK ».
+1. `node tests/tout.mjs` affiche « Tout est prêt à être envoyé ». Relis aussi ses points « ! ».
 2. `CACHE` est incrémenté dans `sw.js` (`cc101fr-v5` devient `cc101fr-v6`, etc.), et tout nouveau
    fichier est ajouté à `FICHIERS`.
-3. `README.md` est à jour : nombre de leçons, liste des fichiers.
+3. `README.md` est à jour : il cite chaque cours, et la liste des fichiers est complète.
 4. Le tableau du labo (partie 6) est à jour.
 5. Relis comme l’apprenant : chaque étape se fait sur iPad, chaque prompt se copie, rien ne
    contredit une leçon précédente.

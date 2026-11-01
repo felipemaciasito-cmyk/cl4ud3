@@ -1,0 +1,37 @@
+# Tests imposés après chaque import de contenu d’apprentissage (voir tests/tout.mjs et CLAUDE.md).
+# Ils tournent sur chaque PR et sur chaque envoi vers main, y compris pour un fichier déposé
+# directement sur github.com. Une croix rouge signale qu’il faut corriger avant de fusionner.
+name: Tests du contenu
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Contenu, règles d’import et appli sur iPad
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Installer Playwright et Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Lancer tous les tests
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: node tests/tout.mjs --base "$BASE"

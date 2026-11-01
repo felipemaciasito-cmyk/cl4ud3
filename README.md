@@ -1,6 +1,6 @@
 # CL4UD3
 
-CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Premier cours : **Claude Code 101**, avec 12 leçons, des exercices sur claude.ai/code, un quiz final d’une question à la fois et un lexique. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
+CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Premier cours : **Claude Code 101**. Chaque cours a ses leçons, ses exercices sur claude.ai/code et son quiz final d’une question à la fois ; le lexique est commun. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
 
 Parcours non officiel, rédigé par Claude à partir du programme public du cours Claude Code 101 (Anthropic Academy) et de la documentation officielle de Claude Code en français.
 
@@ -38,13 +38,17 @@ Remplace seulement les fichiers modifiés : sur GitHub, « Add file », puis « 
 | `manifest.webmanifest` | Nom et icônes de l’appli installée |
 | `icon.svg`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Les icônes |
 | `CLAUDE.md` | Les règles à suivre pour ajouter du contenu, lues par Claude Code à chaque session |
-| `.claude/settings.json`, `.claude/hooks/verifier-contenu.mjs` | La vérification automatique du contenu (hooks de Claude Code) |
+| `.claude/settings.json`, `.claude/hooks/` | Les hooks de Claude Code : vérification du contenu, tests avant chaque envoi sur GitHub |
+| `tests/` | Les tests à passer après chaque import : `node tests/tout.mjs` |
+| `.github/workflows/tests.yml` | Les mêmes tests, relancés par GitHub sur chaque PR et chaque envoi vers `main` |
 
 Pour changer un texte, une leçon ou une question du quiz, il suffit de modifier le fichier de contenu du cours (`donnees.js` pour Claude Code 101). Ne modifie pas `app.js` à la main : il est regénéré à partir de `app.jsx`.
 
 ## Ajouter du contenu ou un nouveau cours
 
 Fais-le de préférence avec Claude Code (claude.ai/code) sur ce dépôt : il lit `CLAUDE.md` tout seul, et les hooks vérifient le contenu à chaque modification. Un nouveau cours s’ajoute à la suite des autres avec son propre fichier de contenu, déclaré dans `cours.js` ; l’appli et le carnet de révision l’affichent sans autre changement. Si tu prépares le contenu ailleurs, joins `CLAUDE.md` à la conversation.
+
+Après chaque import, les tests de `node tests/tout.mjs` doivent passer : la vérification du contenu, les règles d’import (rien de supprimé ni déplacé, nouvelles leçons conformes à `CLAUDE.md`) et l’appli testée leçon par leçon dans un navigateur, avec des profils d’iPad. Claude Code ne peut pas envoyer sur GitHub tant qu’ils échouent, et GitHub les relance sur chaque PR : une coche verte veut dire que tout passe, une croix rouge qu’il faut corriger avant de fusionner.
 
 ## Crédits
 
