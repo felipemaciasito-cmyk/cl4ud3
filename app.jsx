@@ -428,7 +428,7 @@ function Accueil({ etat, setEtat, toast }) {
         <h1>CL4UD3</h1>
         <p className="chapo">{PLUSIEURS
           ? `Des cours officiels, réécrits en français et pensés pour l’iPad, à suivre dans l’ordre. Au programme : ${COURS.length} cours, ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final par cours.`
-          : `Le cours Claude Code 101 d’Anthropic Academy, réécrit en français et pensé pour l’iPad. Au programme : ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final.`}</p>
+          : `Le cours Claude Code 101 de Claude Academy, réécrit en français et pensé pour l’iPad. Au programme : ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final.`}</p>
         <div className="progression">
           <div className="progression-ligne">
             <span>{ou}</span>
@@ -460,14 +460,14 @@ function Accueil({ etat, setEtat, toast }) {
         <h2>À propos de ce parcours</h2>
         {PLUSIEURS
           ? <p>Parcours non officiel, rédigé par Claude à partir des programmes publics des cours d’origine et de la documentation officielle de Claude Code en français. Chaque cours suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad.</p>
-          : <p>Parcours non officiel, rédigé par Claude à partir du programme public de Claude Code 101 (Anthropic Academy) et de la documentation officielle de Claude Code en français. Il suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad.</p>}
+          : <p>Parcours non officiel, rédigé par Claude à partir du programme public de Claude Code 101 (Claude Academy) et de la documentation officielle de Claude Code en français. Il suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad.</p>}
         <p>Ta progression est enregistrée sur cet appareil.</p>
         <ul>
           {PLUSIEURS
             ? <li>Les cours d’origine : {COURS.map((c, i) => (
                 <React.Fragment key={c.id}>{i > 0 && ", "}<a href={c.source.url} target="_blank" rel="noopener">{c.source.nom}</a></React.Fragment>
-              ))}. Pour un certificat officiel, il faut passer le quiz du cours d’origine.</li>
-            : <li>Pour le certificat officiel, il faut passer le quiz du cours, en anglais, sur <a href="https://anthropic.skilljar.com/claude-code-101" target="_blank" rel="noopener">anthropic.skilljar.com</a>.</li>}
+              ))}. Pour un badge officiel, il faut passer le quiz du cours d’origine.</li>
+            : <li>Pour le badge officiel, il faut passer le quiz du cours sur <a href="https://academy.claude.com/fr/courses/claude-code-101" target="_blank" rel="noopener">academy.claude.com</a>.</li>}
           <li>La documentation officielle en français : <a href="https://code.claude.com/docs/fr/overview" target="_blank" rel="noopener">code.claude.com/docs/fr</a>.</li>
           <li>Bloqué sur une étape ? Copie le titre de la leçon et pose ta question à Claude.</li>
         </ul>

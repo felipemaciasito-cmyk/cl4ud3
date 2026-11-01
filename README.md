@@ -2,7 +2,7 @@
 
 CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Premier cours : **Claude Code 101**. Chaque cours a ses leçons, ses exercices sur claude.ai/code et son quiz final d’une question à la fois ; le lexique est commun. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
 
-Parcours non officiel, rédigé par Claude à partir du programme public du cours Claude Code 101 (Anthropic Academy) et de la documentation officielle de Claude Code en français.
+Parcours non officiel, rédigé par Claude à partir du programme public du cours Claude Code 101 (Claude Academy) et de la documentation officielle de Claude Code en français.
 
 ## Mettre l’appli en ligne depuis l’iPad
 
@@ -56,4 +56,4 @@ Après chaque import, les tests de `node tests/tout.mjs` doivent passer : la vé
 - Icônes : tracés de [Lucide](https://lucide.dev) (licence ISC).
 - [React](https://react.dev) (licence MIT).
 - Polices : Bricolage Grotesque et Atkinson Hyperlegible, via Google Fonts.
-- Pour le certificat officiel, il faut passer le quiz du cours, en anglais, sur [anthropic.skilljar.com](https://anthropic.skilljar.com/claude-code-101).
+- Pour le badge officiel, il faut passer le quiz du cours sur [academy.claude.com](https://academy.claude.com/fr/courses/claude-code-101).
