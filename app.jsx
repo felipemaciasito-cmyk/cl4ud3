@@ -495,6 +495,7 @@ function Lecon({ id, etat, setEtat, toast }) {
         <ul>{l.retenir.map((r, i) => <li key={i}><Texte t={r} /></li>)}</ul>
       </aside>
 
+      <p className="lecon-meta"><a className="bouton bouton-contour" href={`revisions.html?lesson=${id}`}>Noter une difficulté sur cette leçon</a></p>
       <Exercice ex={l.exercice} lessonId={id} />
 
       <nav className="lecon-pied" aria-label="Navigation entre les leçons">
