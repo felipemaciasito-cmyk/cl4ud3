@@ -64,7 +64,7 @@ function render(){
  <section class="rev-card ai-card"><p class="eyebrow">TUTEUR PÉDAGOGIQUE</p><h2>Assistant intelligent</h2><p class="rev-small">Il pourra expliquer une notion, construire des exemples et générer des exercices ciblés à partir de tes difficultés.</p><div id="ai-state" class="ai-state"></div><label class="ai-config">Adresse du service IA (facultatif)<input id="ai-endpoint" type="url" placeholder="https://ton-service-ia.example/api/chat"></label><button id="save-ai" class="rev-btn secondary full">Enregistrer l’adresse</button><p class="rev-tiny">La clé secrète ne doit jamais être placée dans cette application publique. Le service IA devra la conserver côté serveur.</p></section>
  </aside>
  </section>
- <footer class="rev-footer">Tes notes restent dans le stockage local de ce navigateur. Pense à exporter régulièrement une sauvegarde.</footer>
+ <footer class="rev-footer"><span>Tes notes restent dans le stockage local de ce navigateur.</span><button id="export-data" class="rev-btn secondary">Exporter mon carnet (.json)</button></footer>
  </main>
  <div id="detail-modal" class="rev-modal" hidden></div>`;
  }
@@ -141,6 +141,7 @@ function render(){
  document.getElementById("search").oninput=e=>{search=e.target.value;renderList();};
  document.getElementById("filter").onchange=e=>{filter=e.target.value;renderList();};
  document.getElementById("save-ai").onclick=()=>{const endpoint=document.getElementById("ai-endpoint").value.trim();writeAI({endpoint});refresh();};
+ document.getElementById("export-data").onclick=()=>{const payload={exportedAt:new Date().toISOString(),version:1,items:readItems()};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="claude-code-101-mon-carnet.json";a.click();URL.revokeObjectURL(url);};
  refresh();
 }
 render();
