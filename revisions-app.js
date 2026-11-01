@@ -120,27 +120,71 @@ function render(){
  const x=items.find(i=>i.id===id);if(!x)return;
  const modal=document.getElementById("detail-modal");
  modal.hidden=false;
- modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">EXPLICATION ET ENTRAÎNEMENT</p><div id="tutor-content"><p class="rev-small">Demande une explication personnalisée à l’assistant intelligent. Il utilisera le contexte de cette difficulté.</p></div><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Préparer mon explication et mes exercices</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
+ modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Ajoute une ou plusieurs captures de ton exercice. Claude analysera l’énoncé, le code et les consignes. S’il manque une information, il te posera des questions ciblées.</p><label class="image-upload">Captures d’écran de l’exercice<input id="exercise-images" type="file" accept="image/png,image/jpeg,image/webp" multiple ${ai.endpoint?"":"disabled"}><span class="rev-tiny">Jusqu’à 3 images. Elles sont envoyées à Claude avec ta question et ne sont pas enregistrées dans ton carnet.</span></label><div id="image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">Décris ce que tu ne comprends pas, ou envoie simplement la capture pour commencer.</p></div><label class="tutor-question-label" for="tutor-question">Ta question ou ta réponse à Claude<textarea id="tutor-question" rows="3" placeholder="Ex. : Je ne comprends pas ce que l’exercice attend de moi…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Analyser l’exercice avec Claude</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
  const close=()=>modal.hidden=true;
  document.getElementById("close-modal").onclick=close;document.getElementById("close-bottom").onclick=close;
  document.getElementById("detail-status").onchange=e=>{x.status=e.target.value;x.updatedAt=Date.now();save(x);refresh();};
  document.getElementById("delete-item").onclick=()=>{if(confirm("Supprimer cette difficulté ?")){writeItems(readItems().filter(y=>y.id!==id));close();refresh();}};
+ window.__cc101TutorHistory=[];
+ const imagePicker=document.getElementById("exercise-images");
+ imagePicker.addEventListener("change",()=>{
+  const preview=document.getElementById("image-preview");
+  const files=Array.from(imagePicker.files||[]).slice(0,3);
+  preview.innerHTML=files.map((f,i)=>'<div class="image-preview-item"><span>'+esc(f.name)+'</span><small>'+Math.round(f.size/1024)+' Ko</small></div>').join("");
+  if(imagePicker.files.length>3){out.insertAdjacentHTML("beforeend",'<p class="error-text">Seules les 3 premières images seront utilisées.</p>');}
+ });
  document.getElementById("ask-ai").onclick=()=>askAI(x);
  }
  async function askAI(x){
  const out=document.getElementById("tutor-content"),btn=document.getElementById("ask-ai");
- if(!ai.endpoint)return;
- btn.disabled=true;btn.textContent="Préparation en cours…";out.innerHTML='<p class="rev-small">L’assistant prépare une réponse adaptée à cette notion.</p>';
- const prompt=`Tu es un tuteur pédagogique expert en programmation et Claude Code. Tu accompagnes un apprenant francophone débutant. Réponds en français, avec précision, pédagogie et suffisamment de détails pour que la notion soit réellement comprise. Ne cherche pas à raccourcir artificiellement la réponse : développe les étapes nécessaires, sans répétitions ni digressions.\n\nStructure ta réponse avec des titres clairs :\n1. Comprendre la notion : définition, rôle et fonctionnement, étape par étape.\n2. Exemple concret : un exemple pertinent, expliqué ligne par ligne si du code est utile.\n3. Mise en pratique : montre comment reconnaître quand et pourquoi utiliser cette notion.\n4. Erreurs et confusions fréquentes : explique les pièges importants.\n5. À retenir : synthèse des points essentiels.\n6. Exercices progressifs : propose deux ou trois exercices adaptés au niveau débutant, puis place les corrections dans une section distincte à la fin.\n\nAdapte la longueur à la difficulté réelle du sujet. N'impose aucune limite de mots ou de phrases. Ne supprime aucune explication indispensable. Termine toutes les phrases et toutes les sections. Si la réponse risque d'être longue, privilégie une réponse complète et bien structurée plutôt qu'une réponse artificiellement courte. N'affirme pas comme certain ce qui ne l'est pas.\n\nCours : ${x.courseTitle}\nLeçon : ${x.lessonTitle}\nNotion : ${x.topicTitle}\nQuestion de l’apprenant : ${x.description}`;
+ const picker=document.getElementById("exercise-images"),question=document.getElementById("tutor-question");
+ if(!ai.endpoint||btn.disabled)return;
+ const files=Array.from(picker.files||[]);
+ if(!question.value.trim()&&!files.length){question.focus();question.placeholder="Écris une question ou ajoute une capture d’écran.";return;}
+ if(files.length>3){out.innerHTML='<p class="error-text">Choisis au maximum 3 captures à la fois.</p>';return;}
+ btn.disabled=true;btn.textContent="Analyse en cours…";
+ out.insertAdjacentHTML("beforeend",'<p class="rev-small" id="tutor-pending">Claude analyse ton exercice et prépare une réponse…</p>');
  try{
- const res=await fetch(ai.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:prompt}],temperature:0.3})});
- if(!res.ok)throw new Error("Le service IA a répondu avec le statut "+res.status);
- const data=await res.json();const answer=data.choices?.[0]?.message?.content||data.answer||data.content||"Réponse vide du service IA.";
- out.innerHTML=`<div class="ai-answer">${renderTutorAnswer(answer)}</div>`;
- out.scrollIntoView({behavior:"smooth",block:"nearest"});
- }catch(err){out.innerHTML=`<p class="error-text">${esc(err.message)}. Vérifie l’adresse du service et sa configuration CORS.</p>`;}
- finally{btn.disabled=false;btn.textContent="Régénérer l’explication et les exercices";}
- }
+  const imageParts=[];
+  for(const file of files){
+   if(!["image/png","image/jpeg","image/webp"].includes(file.type))throw Error("Format non pris en charge : "+file.name);
+   if(file.size>12*1024*1024)throw Error("Une image dépasse 12 Mo : "+file.name);
+   imageParts.push(await imageToAnthropicPart(file));
+  }
+  const userText=question.value.trim()||"Analyse cette capture d’exercice. Identifie le sujet, explique ce qui est demandé et aide-moi à comprendre.";
+  const history=window.__cc101TutorHistory||(window.__cc101TutorHistory=[]);
+  if(!history.length){
+   history.push({role:"user",content:[{type:"text",text:"Tu es un tuteur pédagogique expert en programmation et Claude Code. Aide un apprenant débutant francophone. Analyse attentivement les captures d’écran fournies : lis l’énoncé, les consignes, le code et les éventuels messages d’erreur. Identifie précisément le langage, la notion et l’objectif de l’exercice. Si tu ne peux pas identifier le sujet avec certitude, explique ce que tu as pu reconnaître puis pose une ou deux questions ciblées avant de donner une solution. Ne devine jamais le contenu illisible. Explique progressivement, avec des exemples adaptés au niveau débutant. Si l’apprenant répond à tes questions, utilise tout l’historique pour poursuivre. Tu peux proposer une démarche et des indices avant de donner la solution complète."}]});
+  }
+  const content=[...imageParts,{type:"text",text:userText}];
+  history.push({role:"user",content});
+  const res=await fetch(ai.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:history})});
+  let data;try{data=await res.json();}catch{throw Error("Réponse du service illisible.");}
+  if(!res.ok)throw Error(data.error||data.message||"Erreur HTTP "+res.status);
+  const answer=data.answer||data.content||data.choices?.[0]?.message?.content;
+  if(typeof answer!=="string"||!answer.trim())throw Error("Claude n’a pas renvoyé de réponse exploitable.");
+  history.push({role:"assistant",content:[{type:"text",text:answer}]});
+  document.getElementById("tutor-pending")?.remove();
+  out.insertAdjacentHTML("beforeend",'<div class="tutor-turn"><span class="tutor-role">Claude</span><div class="ai-answer">'+renderTutorAnswer(answer)+'</div></div>');
+  question.value="";
+  picker.value="";
+  document.getElementById("image-preview").innerHTML="";
+  out.scrollTop=out.scrollHeight;
+ }catch(err){
+  document.getElementById("tutor-pending")?.remove();
+  out.insertAdjacentHTML("beforeend",'<p class="error-text">'+esc(err.message)+'</p>');
+ }finally{btn.disabled=false;btn.textContent="Envoyer à Claude";}
+}
+async function imageToAnthropicPart(file){
+ const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error("Impossible de lire l’image."));reader.readAsDataURL(file);});
+ const img=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Image illisible : "+file.name));image.src=dataUrl;});
+ const max=1800,scale=Math.min(1,max/Math.max(img.width,img.height));
+ const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
+ const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,canvas.width,canvas.height);
+ const jpeg=canvas.toDataURL("image/jpeg",0.82);
+ return {type:"image",source:{type:"base64",media_type:"image/jpeg",data:jpeg.split(",")[1]}};
+}
+
  shell();
  const courseSelect=document.getElementById("course-select");
  courseSelect.innerHTML=COURSE_REGISTRY.map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join("");
