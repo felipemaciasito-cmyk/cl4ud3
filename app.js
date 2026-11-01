@@ -13,6 +13,18 @@ function lireEtat() {
   }
   return { faites: [], quiz: null, theme: "auto" };
 }
+function enregistrerErreurQuiz(q, choisi) {
+  try {
+    const cle = "cc101fr:revisions:v1";
+    const items = JSON.parse(localStorage.getItem(cle) || "[]");
+    const lecon = LECONS.find((l) => l.id === q.l) || LECONS[0];
+    const existant = items.find((x) => x.source === "quiz" && x.question === q.q && x.status !== "maitrise");
+    if (existant) { existant.occurrences = (existant.occurrences || 1) + 1; existant.updatedAt = Date.now(); localStorage.setItem(cle, JSON.stringify(items)); return; }
+    items.unshift({ id: "quiz-" + Date.now() + "-" + q.l, type: "Erreur", source: "quiz", courseId: "claude-code-101", courseTitle: "Claude Code 101", lessonId: lecon.id, lessonTitle: lecon.titre, topicTitle: lecon.objectifs[0] || lecon.titre, description: "Question : " + q.q + "\nRéponse donnée : " + q.o[choisi] + "\nRéponse attendue : " + q.o[q.b] + "\nExplication : " + q.e, question: q.q, wrongAnswer: q.o[choisi], correctAnswer: q.o[q.b], explanation: q.e, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
+    localStorage.setItem(cle, JSON.stringify(items));
+  } catch (e) {}
+}
+
 function useEtat() {
   const [etat, setEtat] = useState(lireEtat);
   useEffect(() => {
@@ -180,7 +192,7 @@ function Barre({ etat, setEtat, route }) {
   const theme = etat.theme;
   const suivant = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
   const Ic = theme === "clair" ? IcSoleil : theme === "sombre" ? IcLune : IcAuto;
-  return /* @__PURE__ */ React.createElement("header", { className: "barre" }, /* @__PURE__ */ React.createElement("div", { className: "barre-int" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "marque" }, /* @__PURE__ */ React.createElement("span", { className: "marque-logo", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null)), /* @__PURE__ */ React.createElement("span", { className: "marque-nom" }, "Claude Code 101 ", /* @__PURE__ */ React.createElement("span", null, "en français"))), /* @__PURE__ */ React.createElement("nav", { className: "barre-nav", "aria-label": "Navigation principale" }, /* @__PURE__ */ React.createElement("a", { href: "#lexique", "aria-current": route.vue === "lexique" ? "page" : void 0 }, /* @__PURE__ */ React.createElement(IcLivre, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Lexique")), /* @__PURE__ */ React.createElement("a", { href: "#quiz", "aria-current": route.vue === "quiz" ? "page" : void 0 }, /* @__PURE__ */ React.createElement(IcDrapeau, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Quiz"))), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("header", { className: "barre" }, /* @__PURE__ */ React.createElement("div", { className: "barre-int" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "marque" }, /* @__PURE__ */ React.createElement("span", { className: "marque-logo", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null)), /* @__PURE__ */ React.createElement("span", { className: "marque-nom" }, "Claude Code 101 ", /* @__PURE__ */ React.createElement("span", null, "en français"))), /* @__PURE__ */ React.createElement("nav", { className: "barre-nav", "aria-label": "Navigation principale" }, /* @__PURE__ */ React.createElement("a", { href: "#lexique", "aria-current": route.vue === "lexique" ? "page" : void 0 }, /* @__PURE__ */ React.createElement(IcLivre, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Lexique")), /* @__PURE__ */ React.createElement("a", { href: "#quiz", "aria-current": route.vue === "quiz" ? "page" : void 0 }, /* @__PURE__ */ React.createElement(IcDrapeau, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Quiz")), /* @__PURE__ */ React.createElement("a", { href: "revisions.html" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Révisions"))), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -283,8 +295,9 @@ function Quiz({ etat, setEtat }) {
   }, [idx, valide]);
   const valider = useCallback(() => {
     if (choisi === null || valide[idx]) return;
+    if (choisi !== q.b) recordWrongQuiz(q, choisi);
     setValide((v) => v.map((x, i) => i === idx ? true : x));
-  }, [choisi, idx, valide]);
+  }, [choisi, idx, valide, q]);
   const suivant = useCallback(() => {
     if (idx < QUIZ.length - 1) {
       setIdx(idx + 1);
