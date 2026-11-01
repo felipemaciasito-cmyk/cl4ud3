@@ -2,6 +2,7 @@ import { LECONS, SECTIONS, QUIZ } from "./donnees.js";
 
 const STORE = "cc101fr:revisions:v1";
 const AI_STORE = "cc101fr:revision-ai:v1";
+const COURSE_REGISTRY = [{ id: "claude-code-101", title: "Claude Code 101", lessons: LECONS }];
 const esc = (s="") => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const date = (v) => new Intl.DateTimeFormat("fr-FR",{dateStyle:"medium"}).format(new Date(v));
 const uid = () => "r" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -16,7 +17,7 @@ function topicsFor(l){
  return out;
 }
 function catalog(){
- return LECONS.map(l=>({id:l.id,titre:l.titre,section:SECTIONS[l.section],topics:topicsFor(l)}));
+ return COURSE_REGISTRY.map(course=>({...course,lessons:course.lessons.map(l=>({id:l.id,titre:l.titre,section:SECTIONS[l.section],topics:topicsFor(l)}))}));
 }
 function save(item){
  const all=readItems(); const old=all.findIndex(x=>x.id===item.id);
@@ -49,8 +50,8 @@ function render(){
  <div class="rev-primary">
  <div class="rev-section-head"><div><p class="eyebrow">TON CARNET</p><h2>Ajouter une difficulté</h2></div><span class="rev-small">Erreur · doute · question</span></div>
  <form id="entry-form" class="rev-card rev-form">
- <div class="rev-fields two"><label>Type<select name="type"><option>Question</option><option>Doute</option><option>Erreur</option></select></label><label>Cours<select name="lesson" id="lesson-select"></select></label></div>
- <label>Notion concernée<select name="topic" id="topic-select"></select></label>
+ <div class="rev-fields two"><label>Type<select name="type"><option>Question</option><option>Doute</option><option>Erreur</option></select></label><label>Cours<select name="course" id="course-select"></select></label></div>
+ <div class="rev-fields two"><label>Leçon<select name="lesson" id="lesson-select"></select></label><label>Notion concernée<select name="topic" id="topic-select"></select></label></div>
  <label>Ce qui te pose problème<textarea name="description" rows="3" placeholder="Décris ton erreur, ton doute ou ta question avec tes mots…" required></textarea></label>
  <div class="rev-form-foot"><span class="rev-small">Enregistré sur cet appareil.</span><button class="rev-btn primary" type="submit">Ajouter au carnet</button></div>
  </form>
@@ -88,12 +89,19 @@ function render(){
  document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>detail(b.dataset.open)));
  }
  function renderCourses(){
- document.getElementById("course-list").innerHTML=courses.map(l=>`<details class="course-row"><summary><span class="course-number">${l.id.toString().padStart(2,"0")}</span><span>${esc(l.titre)}</span><span class="course-chevron">⌄</span></summary><div class="course-topics">${l.topics.map(t=>`<button data-topic-lesson="${l.id}" data-topic="${esc(t.titre)}">${esc(t.titre)}</button>`).join("")}</div></details>`).join("");
- document.querySelectorAll("[data-topic-lesson]").forEach(b=>b.addEventListener("click",()=>{document.getElementById("lesson-select").value=b.dataset.topicLesson;fillTopics();document.getElementById("topic-select").value=b.dataset.topic;document.querySelector("#entry-form textarea").focus();window.scrollTo({top:document.getElementById("entry-form").offsetTop-90,behavior:"smooth"});}));
+ document.getElementById("course-list").innerHTML=courses.map(c=>`<details class="course-row"><summary><span class="course-number">01</span><span>${esc(c.title)}</span><span class="course-chevron">⌄</span></summary><div class="course-topics">${c.lessons.map(l=>`<details class="course-row"><summary><span class="course-number">${String(l.id).padStart(2,"0")}</span><span>${esc(l.titre)}</span></summary><div class="course-topics">${l.topics.map(t=>`<button data-topic-course="${esc(c.id)}" data-topic-lesson="${l.id}" data-topic="${esc(t.titre)}">${esc(t.titre)}</button>`).join("")}</div></details>`).join("")}</div></details>`).join("");
+ document.querySelectorAll("[data-topic-lesson]").forEach(b=>b.addEventListener("click",()=>{document.getElementById("course-select").value=b.dataset.topicCourse;fillLessons();document.getElementById("lesson-select").value=b.dataset.topicLesson;fillTopics();document.getElementById("topic-select").value=b.dataset.topic;document.querySelector("#entry-form textarea").focus();window.scrollTo({top:document.getElementById("entry-form").offsetTop-90,behavior:"smooth"});}));
+ }
+ function fillLessons(){
+ const course=COURSE_REGISTRY.find(c=>c.id===document.getElementById("course-select").value)||COURSE_REGISTRY[0];
+ const lessons=course.lessons.map(l=>({id:l.id,titre:l.titre}));
+ document.getElementById("lesson-select").innerHTML=lessons.map(l=>`<option value="${l.id}">Leçon ${l.id} — ${esc(l.titre)}</option>`).join("");
+ fillTopics();
  }
  function fillTopics(){
- const id=Number(document.getElementById("lesson-select").value), l=courses.find(x=>x.id===id);
- document.getElementById("topic-select").innerHTML=(l?.topics||[]).map(t=>`<option value="${esc(t.titre)}">${esc(t.titre)}</option>`).join("");
+ const course=COURSE_REGISTRY.find(c=>c.id===document.getElementById("course-select").value)||COURSE_REGISTRY[0];
+ const l=course.lessons.find(x=>x.id===Number(document.getElementById("lesson-select").value));
+ document.getElementById("topic-select").innerHTML=(l?topicsFor(l):[]).map(t=>`<option value="${esc(t.titre)}">${esc(t.titre)}</option>`).join("");
  }
  function detail(id){
  const x=items.find(i=>i.id===id);if(!x)return;
@@ -120,13 +128,15 @@ function render(){
  finally{btn.disabled=false;btn.textContent="Régénérer l’explication et les exercices";}
  }
  shell();
+ const courseSelect=document.getElementById("course-select");
+ courseSelect.innerHTML=COURSE_REGISTRY.map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join("");
+ courseSelect.onchange=fillLessons;
  const lessonSelect=document.getElementById("lesson-select");
- lessonSelect.innerHTML=courses.map(l=>`<option value="${l.id}">Leçon ${l.id} — ${esc(l.titre)}</option>`).join("");
- lessonSelect.onchange=fillTopics;fillTopics();
+ lessonSelect.onchange=fillTopics;fillLessons();
  document.getElementById("entry-form").onsubmit=e=>{
- e.preventDefault();const fd=new FormData(e.currentTarget),lesson=courses.find(l=>l.id===Number(fd.get("lesson")));
- save({id:uid(),type:fd.get("type"),source:"manuel",courseId:"claude-code-101",courseTitle:"Claude Code 101",lessonId:lesson.id,lessonTitle:lesson.titre,topicTitle:fd.get("topic"),description:fd.get("description").trim(),status:"a-comprendre",createdAt:Date.now(),updatedAt:Date.now(),occurrences:1});
- e.currentTarget.reset();fillTopics();refresh();
+ e.preventDefault();const fd=new FormData(e.currentTarget),course=COURSE_REGISTRY.find(c=>c.id===fd.get("course")),lesson=course.lessons.find(l=>l.id===Number(fd.get("lesson")));
+ save({id:uid(),type:fd.get("type"),source:"manuel",courseId:course.id,courseTitle:course.title,lessonId:lesson.id,lessonTitle:lesson.titre,topicTitle:fd.get("topic"),description:fd.get("description").trim(),status:"a-comprendre",createdAt:Date.now(),updatedAt:Date.now(),occurrences:1});
+ e.currentTarget.reset();fillLessons();refresh();
  };
  document.getElementById("search").oninput=e=>{search=e.target.value;renderList();};
  document.getElementById("filter").onchange=e=>{filter=e.target.value;renderList();};
