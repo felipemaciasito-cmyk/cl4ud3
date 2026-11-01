@@ -9,7 +9,7 @@ export const COURS = [
   {
     id: "claude-code-101",
     titre: "Claude Code 101",
-    source: { nom: "Claude Code 101, Anthropic Academy", url: "https://anthropic.skilljar.com/claude-code-101" },
+    source: { nom: "Claude Code 101, Claude Academy", url: "https://academy.claude.com/fr/courses/claude-code-101" },
     ...claudeCode101,
   },
 ];
