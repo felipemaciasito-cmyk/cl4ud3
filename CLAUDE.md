@@ -1,7 +1,7 @@
-# Claude Code 101 en français : consignes du projet
+# CL4UD3 : consignes du projet
 
-Appli web pour iPad qui présente des cours officiels sur Claude Code, réécrits en français, à suivre
-dans l’ordre. Chaque cours a son fichier de contenu (`donnees.js` pour Claude Code 101, puis
+CL4UD3 est une appli web pour iPad qui présente des cours officiels sur Claude Code, réécrits en
+français, à suivre dans l’ordre. Chaque cours a son fichier de contenu (`donnees.js` pour Claude Code 101, puis
 `donnees-<id>.js`), déclaré dans `cours.js`. Ce fichier fixe les règles à suivre **à chaque ajout ou
 modification de contenu** (cours, leçons, exercices, quiz, lexique). Elles valent aussi pour du
 contenu préparé ailleurs (dans le chat claude.ai, par exemple) : joins alors ce fichier à la conversation.
@@ -28,7 +28,8 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 - Ajoute toujours à la fin du cours : nouvel `id` = dernier `id` + 1 (chaque cours commence à 1).
   Ne renumérote, ne déplace et ne supprime jamais une leçon, ne change jamais l’`id` d’un cours ni
   une clé du localStorage : la progression (`cc101fr:v1`) et le carnet de révision
-  (`cc101fr:revisions:v1`) enregistrent ces numéros.
+  (`cc101fr:revisions:v1`) enregistrent ces numéros. Ces identifiants gardent l’ancien nom de l’appli
+  (`cc101`) : ne les renomme pas en CL4UD3.
 - Place la leçon dans une section existante du cours, ou ajoute la section à la fin de son `SECTIONS`.
 - Une notion s’appuie sur celles déjà vues. N’utilise pas une notion pas encore expliquée ; renvoie à
   la leçon qui l’explique : « (leçon 8) » dans le même cours, « (Claude Code 101, leçon 8) » sinon.

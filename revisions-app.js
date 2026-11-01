@@ -77,7 +77,7 @@ function render(){
  const statColor={"a-comprendre":"status-warn","en-cours":"status-progress","maitrise":"status-done"};
  function shell(){
  root.innerHTML=`
- <header class="rev-top"><a class="rev-brand" href="index.html">← <span>Claude Code 101</span></a><span class="rev-top-label">ESPACE DE CONSOLIDATION</span></header>
+ <header class="rev-top"><a class="rev-brand" href="index.html">← <span>CL4UD3</span></a><span class="rev-top-label">ESPACE DE CONSOLIDATION</span></header>
  <main class="rev-main">
  <section class="rev-intro"><p class="eyebrow">APPRENDRE · COMPRENDRE · INTÉGRER</p><h1>Révisions & compréhension</h1><p class="rev-lead">Un espace pour identifier chaque zone de flou, reprendre les notions à ton rythme et vérifier que tu les maîtrises réellement.</p></section>
  <section class="rev-stats" id="stats"></section>

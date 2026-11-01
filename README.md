@@ -1,6 +1,6 @@
-# Claude Code 101 en français
+# CL4UD3
 
-Une application pour suivre le parcours **Claude Code 101** en français, pensée pour l’iPad : 12 leçons, des exercices sur claude.ai/code, un quiz final d’une question à la fois et un lexique. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
+CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Premier cours : **Claude Code 101**, avec 12 leçons, des exercices sur claude.ai/code, un quiz final d’une question à la fois et un lexique. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
 
 Parcours non officiel, rédigé par Claude à partir du programme public du cours Claude Code 101 (Anthropic Academy) et de la documentation officielle de Claude Code en français.
 

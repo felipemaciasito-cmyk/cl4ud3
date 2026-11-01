@@ -1,4 +1,4 @@
-// Contenu du parcours « Claude Code 101 en français ».
+// Contenu du cours « Claude Code 101 », dans l’appli CL4UD3.
 // Mise en forme dans les textes : **gras** et `code`.
 // Types de blocs : p, h2, h3, liste, tableau, code.
 

@@ -1,7 +1,7 @@
 {
-  "name": "Claude Code 101 en français",
-  "short_name": "Claude Code 101",
-  "description": "Le parcours Claude Code 101 en français, avec exercices pour iPad et quiz final.",
+  "name": "CL4UD3",
+  "short_name": "CL4UD3",
+  "description": "Des cours sur Claude Code réécrits en français, avec exercices pour iPad et quiz.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

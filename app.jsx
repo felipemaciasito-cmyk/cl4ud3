@@ -1,4 +1,4 @@
-// Claude Code 101 en français — application
+// CL4UD3 — application
 // Source lisible. Le fichier app.js utilisé par la page est généré à partir de celui-ci.
 // Composants inspirés de 21st.dev et adaptés :
 //  - « Vertical Descriptive Stepper » (sean0205) pour le parcours
@@ -313,7 +313,7 @@ function Barre({ etat, setEtat, route }) {
       <div className="barre-int">
         <a href="#" className="marque">
           <span className="marque-logo" aria-hidden="true"><i /><i /><i /></span>
-          <span className="marque-nom">Claude Code 101 <span>en français</span></span>
+          <span className="marque-nom">CL4UD3</span>
         </a>
         <nav className="barre-nav" aria-label="Navigation principale">
           <a href="#lexique" aria-current={route.vue === "lexique" ? "page" : undefined}><IcLivre taille={18} /><span>Lexique</span></a>
@@ -425,10 +425,10 @@ function Accueil({ etat, setEtat, toast }) {
   return (
     <div className="page">
       <section className="hero">
-        <h1>Claude Code 101, en français</h1>
+        <h1>CL4UD3</h1>
         <p className="chapo">{PLUSIEURS
           ? `Des cours officiels, réécrits en français et pensés pour l’iPad, à suivre dans l’ordre. Au programme : ${COURS.length} cours, ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final par cours.`
-          : `Le parcours du cours d’Anthropic Academy, réécrit en français et pensé pour l’iPad. Au programme : ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final.`}</p>
+          : `Le cours Claude Code 101 d’Anthropic Academy, réécrit en français et pensé pour l’iPad. Au programme : ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final.`}</p>
         <div className="progression">
           <div className="progression-ligne">
             <span>{ou}</span>
@@ -828,8 +828,8 @@ function App() {
   useEffect(() => {
     document.title = route.vue === "lecon" ? `${route.cours.LECONS[route.id - 1].titre} · ${route.cours.titre}`
       : route.vue === "quiz" ? `Quiz final · ${route.cours.titre}`
-      : route.vue === "lexique" ? "Lexique · Claude Code 101"
-      : "Claude Code 101 en français";
+      : route.vue === "lexique" ? "Lexique · CL4UD3"
+      : "CL4UD3";
   }, [route]);
 
   const cle = route.vue + (route.cours ? route.cours.id : "") + (route.id || "");
