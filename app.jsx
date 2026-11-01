@@ -37,6 +37,18 @@ function enregistrerErreurQuiz(q, choisi) {
   } catch (e) {}
 }
 
+function enregistrerErreurExercice(lessonId, question, choix, bonneReponse) {
+  try {
+    const cle = "cc101fr:revisions:v1";
+    const items = JSON.parse(localStorage.getItem(cle) || "[]");
+    const lecon = LECONS.find((l) => l.id === lessonId) || LECONS[0];
+    const existant = items.find((x) => x.source === "exercice" && x.lessonId === lessonId && x.question === question && x.status !== "maitrise");
+    if (existant) { existant.occurrences = (existant.occurrences || 1) + 1; existant.updatedAt = Date.now(); localStorage.setItem(cle, JSON.stringify(items)); return; }
+    items.unshift({ id: "ex-" + Date.now() + "-" + lessonId, type: "Erreur", source: "exercice", courseId: "claude-code-101", courseTitle: "Claude Code 101", lessonId, lessonTitle: lecon.titre, topicTitle: question, description: "Question : " + question + "\nRéponse donnée : " + choix + "\nRéponse attendue : " + bonneReponse, question, wrongAnswer: choix, correctAnswer: bonneReponse, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
+    localStorage.setItem(cle, JSON.stringify(items));
+  } catch (e) {}
+}
+
 function useEtat() {
   const [etat, setEtat] = useState(lireEtat);
   useEffect(() => {
@@ -385,7 +397,7 @@ function Pastilles({ id, faites }) {
   );
 }
 
-function Classer() {
+function Classer({ lessonId }) {
   const [choix, setChoix] = useState({});
   const justes = CLASSER.filter((s, i) => choix[i] === s.r).length;
   return (
@@ -401,7 +413,7 @@ function Classer() {
                   <button type="button" key={k}
                     className={c === k ? (k === s.r ? "est-juste" : "est-faux") : ""}
                     aria-pressed={c === k}
-                    onClick={() => setChoix((x) => ({ ...x, [i]: k }))}>
+                    onClick={() => { setChoix((x) => ({ ...x, [i]: k })); if (k !== s.r) enregistrerErreurExercice(lessonId, s.t, PHASES[k], PHASES[s.r]); }}>
                     {c === k && (k === s.r ? <IcCheck taille={16} strokeWidth="3" /> : <IcX taille={16} strokeWidth="3" />)}
                     {PHASES[k]}
                   </button>
@@ -419,12 +431,12 @@ function Classer() {
   );
 }
 
-function Exercice({ ex }) {
+function Exercice({ ex, lessonId }) {
   return (
     <section className="exercice" aria-labelledby="titre-exercice">
       <h2 id="titre-exercice">Exercice</h2>
       {ex.intro && <p><Texte t={ex.intro} /></p>}
-      {ex.classer && <Classer />}
+      {ex.classer && <Classer lessonId={lessonId} />}
       {ex.etapes.length > 0 && (
         <ol className="exercice-etapes">
           {ex.etapes.map((e, i) => (
@@ -483,7 +495,7 @@ function Lecon({ id, etat, setEtat, toast }) {
         <ul>{l.retenir.map((r, i) => <li key={i}><Texte t={r} /></li>)}</ul>
       </aside>
 
-      <Exercice ex={l.exercice} />
+      <Exercice ex={l.exercice} lessonId={id} />
 
       <nav className="lecon-pied" aria-label="Navigation entre les leçons">
         {id > 1
