@@ -154,10 +154,10 @@ function render(){
   }
   const userText=question.value.trim()||"Analyse cette capture d’exercice. Identifie le sujet, explique ce qui est demandé et aide-moi à comprendre.";
   const history=window.__cc101TutorHistory||(window.__cc101TutorHistory=[]);
-  if(!history.length){
-   history.push({role:"user",content:[{type:"text",text:"Tu es un tuteur pédagogique expert en programmation et Claude Code. Aide un apprenant débutant francophone. Analyse attentivement les captures d’écran fournies : lis l’énoncé, les consignes, le code et les éventuels messages d’erreur. Identifie précisément le langage, la notion et l’objectif de l’exercice. Si tu ne peux pas identifier le sujet avec certitude, explique ce que tu as pu reconnaître puis pose une ou deux questions ciblées avant de donner une solution. Ne devine jamais le contenu illisible. Explique progressivement, avec des exemples adaptés au niveau débutant. Si l’apprenant répond à tes questions, utilise tout l’historique pour poursuivre. Tu peux proposer une démarche et des indices avant de donner la solution complète."}]});
-  }
   const content=[...imageParts,{type:"text",text:userText}];
+  if(!history.length){
+   content.unshift({type:"text",text:"Tu es un tuteur pédagogique expert en programmation et Claude Code. Aide un apprenant débutant francophone. Analyse attentivement les captures d’écran fournies : lis l’énoncé, les consignes, le code et les éventuels messages d’erreur. Identifie précisément le langage, la notion et l’objectif de l’exercice. Si tu ne peux pas identifier le sujet avec certitude, explique ce que tu as pu reconnaître puis pose une ou deux questions ciblées avant de donner une solution. Ne devine jamais le contenu illisible. Explique progressivement, avec des exemples adaptés au niveau débutant. Si l’apprenant répond à tes questions, utilise tout l’historique pour poursuivre. Tu peux proposer une démarche et des indices avant de donner la solution complète."});
+  }
   history.push({role:"user",content});
   const res=await fetch(ai.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:history})});
   let data;try{data=await res.json();}catch{throw Error("Réponse du service illisible.");}
