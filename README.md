@@ -30,13 +30,21 @@ Remplace seulement les fichiers modifiés : sur GitHub, « Add file », puis « 
 | `styles.css` | Les couleurs, la mise en page, le mode sombre |
 | `app.js` | L’application, générée à partir de `app.jsx` |
 | `app.jsx` | Le code source lisible de l’application (pas chargé par la page) |
-| `donnees.js` | Tout le contenu : leçons, exercices, quiz, lexique |
+| `cours.js` | La liste des cours, dans l’ordre du parcours |
+| `donnees.js` | Le contenu de Claude Code 101 : leçons, exercices, quiz, lexique |
+| `revisions.html`, `revisions.css`, `revisions-app.js` | Le carnet de révision |
 | `vendor-react.js` | La bibliothèque React, incluse pour marcher sans dépendance externe |
 | `sw.js` | Le service worker : fonctionnement hors ligne |
 | `manifest.webmanifest` | Nom et icônes de l’appli installée |
 | `icon.svg`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Les icônes |
+| `CLAUDE.md` | Les règles à suivre pour ajouter du contenu, lues par Claude Code à chaque session |
+| `.claude/settings.json`, `.claude/hooks/verifier-contenu.mjs` | La vérification automatique du contenu (hooks de Claude Code) |
 
-Pour changer un texte, une leçon ou une question du quiz, il suffit de modifier `donnees.js`. Ne modifie pas `app.js` à la main : il est regénéré à partir de `app.jsx`.
+Pour changer un texte, une leçon ou une question du quiz, il suffit de modifier le fichier de contenu du cours (`donnees.js` pour Claude Code 101). Ne modifie pas `app.js` à la main : il est regénéré à partir de `app.jsx`.
+
+## Ajouter du contenu ou un nouveau cours
+
+Fais-le de préférence avec Claude Code (claude.ai/code) sur ce dépôt : il lit `CLAUDE.md` tout seul, et les hooks vérifient le contenu à chaque modification. Un nouveau cours s’ajoute à la suite des autres avec son propre fichier de contenu, déclaré dans `cours.js` ; l’appli et le carnet de révision l’affichent sans autre changement. Si tu prépares le contenu ailleurs, joins `CLAUDE.md` à la conversation.
 
 ## Crédits
 

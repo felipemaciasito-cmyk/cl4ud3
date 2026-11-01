@@ -1,63 +1,21 @@
 # Claude Code 101 en français : consignes du projet
 
-Appli web pour iPad qui présente le parcours Claude Code 101 en français. Tout le contenu
-d’apprentissage (leçons, exercices, quiz, lexique) est dans `donnees.js`. Ce fichier fixe les
-règles à suivre **à chaque ajout ou modification de contenu**. Elles valent aussi pour du contenu
-préparé ailleurs (dans le chat claude.ai, par exemple) : joins alors ce fichier à la conversation.
+Appli web pour iPad qui présente des cours officiels sur Claude Code, réécrits en français, à suivre
+dans l’ordre. Chaque cours a son fichier de contenu (`donnees.js` pour Claude Code 101, puis
+`donnees-<id>.js`), déclaré dans `cours.js`. Ce fichier fixe les règles à suivre **à chaque ajout ou
+modification de contenu** (cours, leçons, exercices, quiz, lexique). Elles valent aussi pour du
+contenu préparé ailleurs (dans le chat claude.ai, par exemple) : joins alors ce fichier à la conversation.
 
 Si une demande laisse un doute (où placer la leçon, suite du labo ou nouveau projet, source du
 contenu), pose la question avant d’écrire. Garde ce fichier sous 200 lignes (leçon 8).
 
-## Commandes
+## Commandes et hooks
 
-Vérifier le contenu après chaque modification de `donnees.js`. Résultat attendu : « Contenu OK ».
-
-```bash
-node --input-type=module <<'EOF'
-const { SECTIONS, LECONS, QUIZ, LEXIQUE } = await import(process.cwd() + '/donnees.js');
-const err = [], ids = new Set(LECONS.map((l) => l.id)), textes = [];
-const BRUT = ['p', 'p2', 'titre', 'resume']; // affichés tels quels, sans mise en forme
-const lire = (o, ou, brut) => typeof o === 'string' ? textes.push([ou, o, brut])
-  : o && typeof o === 'object' && Object.entries(o).forEach(([k, v]) =>
-      k !== 'texte' && lire(v, ou, brut || BRUT.includes(k)));
-LECONS.forEach((l, i) => {
-  const n = 'Leçon ' + l.id;
-  if (l.id !== i + 1) err.push(n + ' : numéro attendu ' + (i + 1));
-  if (!SECTIONS[l.section]) err.push(n + ' : section inconnue');
-  ['titre', 'resume', 'duree', 'objectifs', 'blocs', 'retenir', 'exercice']
-    .forEach((k) => l[k] || err.push(n + ' : champ ' + k + ' manquant'));
-  (l.blocs || []).forEach((b) => ['p', 'h2', 'h3', 'liste', 'tableau', 'code']
-    .includes(b.type) || err.push(n + ' : bloc inconnu ' + b.type));
-  if (!Array.isArray(l.exercice?.etapes)) err.push(n + ' : exercice.etapes manquant');
-  if (l.exercice?.classer && l.id !== 2) err.push(n + ' : classer est réservé à la leçon 2');
-  lire(l, n, false);
-});
-QUIZ.forEach((q, i) => {
-  const n = 'Quiz ' + (i + 1);
-  if (!ids.has(q.l)) err.push(n + ' : leçon ' + q.l + ' inconnue');
-  if (q.o?.length !== 4) err.push(n + ' : il faut 4 réponses');
-  if (!(q.b >= 0 && q.b < q.o?.length)) err.push(n + ' : bonne réponse hors limites');
-  if (!q.q || !q.e) err.push(n + ' : question ou explication manquante');
-  lire(q, n, true);
-});
-LEXIQUE.forEach((m, i) => {
-  if (i && LEXIQUE[i - 1][0].localeCompare(m[0], 'fr') >= 0) err.push('Lexique : ' + m[0] + ' mal classé');
-  lire(m, 'Lexique', true);
-});
-textes.forEach(([ou, t, brut]) => {
-  const debut = ' dans « ' + t.slice(0, 40) + '… »';
-  if (/['"]/.test(t)) err.push(ou + ' : apostrophe ou guillemet droit' + debut);
-  if (brut && /\*\*|`/.test(t)) err.push(ou + ' : ** ou ` affiché tel quel' + debut);
-  if (/\bcliqu/i.test(t)) err.push(ou + ' : écrire « touche », pas « clique »');
-  if (/\p{Extended_Pictographic}/u.test(t)) err.push(ou + ' : pas d’emoji');
-});
-console.log(err.length ? err.join('\n') : 'Contenu OK : ' + LECONS.length + ' leçons, '
-  + QUIZ.length + ' questions, ' + LEXIQUE.length + ' mots du lexique');
-process.exitCode = err.length ? 1 : 0;
-EOF
-```
-
-Régénérer `app.js` après une modification de `app.jsx` (ne modifie jamais `app.js` à la main) :
+- Vérifier le contenu : `node .claude/hooks/verifier-contenu.mjs`. Résultat attendu : « Contenu OK ».
+- Les hooks de `.claude/settings.json` lancent cette vérification tout seuls : au début de chaque
+  session, après chaque modification de `cours.js`, d’un fichier `donnees*.js` ou de `sw.js`, et
+  avant la fin d’une réponse si le contenu a changé. Corrige ce qu’ils signalent, ne les contourne pas.
+- Régénérer `app.js` après une modification de `app.jsx` (ne modifie jamais `app.js` à la main) :
 
 ```bash
 npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.createElement --jsx-fragment=React.Fragment --outfile=app.js
@@ -65,31 +23,51 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 
 ## 1. Rester dans la continuité du parcours
 
-- Avant d’écrire, relis les leçons existantes, au moins les deux dernières, et le tableau du labo (partie 5).
-- Ajoute toujours à la fin : nouvel `id` = dernier `id` + 1. Ne renumérote, ne déplace et ne supprime
-  jamais une leçon : la progression (`cc101fr:v1`) et le carnet de révision (`cc101fr:revisions:v1`)
-  enregistrent les numéros, et l’appli lit la leçon `id` à la position `id - 1`. Ne change jamais
-  une clé du localStorage.
-- Place la leçon dans une section existante de `SECTIONS`, ou ajoute la nouvelle section à la fin.
+- Avant d’écrire, relis les leçons existantes du cours, au moins les deux dernières, et le tableau
+  du labo (partie 6).
+- Ajoute toujours à la fin du cours : nouvel `id` = dernier `id` + 1 (chaque cours commence à 1).
+  Ne renumérote, ne déplace et ne supprime jamais une leçon, ne change jamais l’`id` d’un cours ni
+  une clé du localStorage : la progression (`cc101fr:v1`) et le carnet de révision
+  (`cc101fr:revisions:v1`) enregistrent ces numéros.
+- Place la leçon dans une section existante du cours, ou ajoute la section à la fin de son `SECTIONS`.
 - Une notion s’appuie sur celles déjà vues. N’utilise pas une notion pas encore expliquée ; renvoie à
-  la leçon qui l’explique, au format « (leçon 8) ».
+  la leçon qui l’explique : « (leçon 8) » dans le même cours, « (Claude Code 101, leçon 8) » sinon.
 - Garde le vocabulaire déjà installé : session, mode Plan, « Accepter automatiquement les
   modifications », dépôt, branche, diff, commit, PR, fusionner, contexte, sous-agent, skill, hook.
 - Ne contredis pas une leçon précédente. Si une information a changé (Claude Code évolue vite),
   corrige aussi l’ancienne leçon et le quiz, et signale-le dans le résumé de la PR.
 - Les exercices appliquent la méthode du parcours : une tâche par session, mode Plan pour une
   fonctionnalité, une vérification avec sa sortie complète, relecture du diff, puis l’étape `PR_FUSION`.
-- Le parcours est une réécriture, pas une copie : ne reproduis ni le texte ni les exercices d’une
-  source (cours officiel, documentation). Écris tes explications et des exercices pensés pour l’iPad.
 - Vérifie chaque fait sur Claude Code (commande, mode, libellé, limite) dans la documentation
   officielle, https://code.claude.com/docs/fr. Ce qui n’a pas pu être vérifié est signalé dans le
   résumé de la PR, jamais présenté comme sûr. N’invente ni chiffre, ni libellé, ni adresse.
 
-## 2. La forme du contenu dans `donnees.js`
+## 2. Un cours officiel en ligne, à ajouter comme cours suivant
+
+- Travaille seulement à partir de ce que l’utilisateur fournit (texte, transcription, captures du
+  cours) et de la documentation officielle. S’il manque le contenu d’une leçon, demande-le :
+  n’invente jamais ce que dit le cours d’origine.
+- Garde les leçons du cours d’origine dans leur ordre, comme pour Claude Code 101. Réécris tout en
+  français ; ne reproduis ni les vidéos, ni le texte, ni les exercices d’origine (souvent faits pour
+  un ordinateur) : refais les exercices pour l’iPad.
+- C’est la suite du parcours : ce qu’un cours précédent explique déjà est rappelé en une ou deux
+  phrases avec un renvoi, pas réexpliqué. Si le cours d’origine dit autre chose qu’un cours
+  précédent, vérifie dans la documentation et corrige le plus ancien si besoin.
+- Pour l’ajouter :
+  1. Crée `donnees-<id>.js` sur le modèle de `donnees.js` : `SECTIONS`, `LECONS`, `QUIZ`, `LEXIQUE`,
+     et `import { PR_FUSION } from "./donnees.js";` pour l’étape de fusion.
+  2. Dans `cours.js`, importe-le et ajoute à la fin de `COURS` : `id` (minuscules et tirets,
+     définitif), `titre`, `source` (nom exact et adresse du cours d’origine), `...contenu`.
+  3. Ajoute le fichier à `FICHIERS` dans `sw.js` et en `modulepreload` dans `index.html`.
+- L’appli s’adapte seule : un en-tête et un quiz par cours, adresses `#<id>/lecon-1`, lexique commun,
+  cours proposé dans le carnet de révision. Rien à changer dans `app.jsx` ni `revisions-app.js`.
+- Un mot du lexique n’est défini qu’une fois, dans le premier cours qui l’utilise.
+
+## 3. La forme d’une leçon
 
 ```js
 {
-  id: 13, section: 3, duree: 20,      // duree : minutes, exercice compris
+  id: 1, section: 0, duree: 20,       // duree : minutes, exercice compris
   titre: "Titre court",               // sans point final
   resume: "Une phrase courte.",       // affichée dans la liste du parcours
   objectifs: ["Comprendre…", "Savoir…", "Créer…"],  // 3, sans point final
@@ -120,13 +98,14 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   fichier, une commande, un champ, `*italique*` rarement. Pas d’autre Markdown, pas de HTML, pas
   d’astérisque isolé. Elle ne marche pas dans `titre`, `resume`, les prompts, le quiz et le lexique.
 - Un bloc `code` qui contient des antislashs s’écrit avec `String.raw` (voir `PRETTIER_HOOK`).
-- N’utilise pas `classer: true` : cet exercice interactif est lié à la leçon 2. Un nouveau type de
-  bloc ou d’exercice demande de modifier `app.jsx`, de régénérer `app.js` et de le signaler.
-- Quiz : 1 à 3 questions par nouvelle leçon, à la fin de `QUIZ`, avec `l` = numéro de la leçon.
-  4 réponses plausibles, une seule juste ; varie sa position (`b`, de 0 à 3). `e` explique pourquoi.
+- `classer: true` (exercice où l’on classe des étapes) demande `CLASSER` et `PHASES` dans le fichier
+  du cours, une fois par cours. Un autre type de bloc ou d’exercice demande de modifier `app.jsx`,
+  de régénérer `app.js` et de le signaler.
+- Quiz : 1 à 3 questions par nouvelle leçon, à la fin du `QUIZ` du cours, avec `l` = numéro de la
+  leçon. 4 réponses plausibles, une seule juste ; varie sa position (`b`, de 0 à 3). `e` explique pourquoi.
 - Lexique : chaque terme nouveau qui resservira entre dans `LEXIQUE`, par ordre alphabétique, en une ou deux phrases.
 
-## 3. Pensé pour l’iPad
+## 4. Pensé pour l’iPad
 
 - Tout l’exercice se fait sur iPad : Safari, claude.ai/code ou l’onglet Code de l’appli Claude,
   github.com, l’app Fichiers. Jamais de terminal, d’installation, de raccourci clavier, de clic
@@ -144,7 +123,7 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 - Si tu modifies l’interface : zones à toucher d’au moins 44 px, rien qui n’existe qu’au survol,
   mode sombre, marges `safe-area`, portrait et paysage, fonctionnement hors ligne.
 
-## 4. Un français clair
+## 5. Un français clair
 
 - Tutoiement, phrases courtes, voix active, une idée par phrase. Explique avant de nommer.
 - Garde le mot anglais seulement quand c’est le vrai nom de l’outil (hook, skill, commit, diff,
@@ -155,41 +134,41 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   l’appli la rend insécable. Pas d’emoji.
 - Les prompts sont aussi en français, et demandent une réponse en français quand ce n’est pas évident.
 
-## 5. Le projet fil rouge : `labo-claude-code`
+## 6. Le projet fil rouge : `labo-claude-code`
 
 Les exercices pratiques continuent dans le même dépôt et la même appli, le carnet de courses de
-livraison, sauf si la leçon annonce clairement un nouveau projet.
+livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un nouveau projet.
 
-| Leçon | Ce que le labo contient après l’exercice |
+| Cours · leçon | Ce que le labo contient après l’exercice |
 |---|---|
-| 3 | Dépôt public `labo-claude-code` avec un README, relié à claude.ai/code |
-| 4 | `index.html` : carnet de courses (date, km, €), totaux en km, € et €/km ; en ligne sur GitHub Pages |
-| 5 | Courses gardées dans le localStorage ; totaux dans `calculs.js`, testés avec `node --test` |
-| 7 | Bugs ou cas limites corrigés, chacun avec un test écrit d’abord |
-| 8 | `CLAUDE.md` du labo : tests, interface en français, pas de bibliothèque externe, montants « 12,50 € », clé du localStorage à garder ; gain moyen par course |
-| 9 | Sous-agent `.claude/agents/relecteur.md` (Read, Grep, Glob) ; bouton pour supprimer une course |
-| 10 | Skill `/journal` qui tient `JOURNAL.md` ; totaux en gras |
-| 11 | `.mcp.json` : serveur `claude-code-docs` |
-| 12 | `.claude/settings.json` : hook qui bloque toute modification dans `protege/` ; hook Prettier en bonus, donc peut-être absent |
+| 101 · 3 | Dépôt public `labo-claude-code` avec un README, relié à claude.ai/code |
+| 101 · 4 | `index.html` : carnet de courses (date, km, €), totaux en km, € et €/km ; en ligne sur GitHub Pages |
+| 101 · 5 | Courses gardées dans le localStorage ; totaux dans `calculs.js`, testés avec `node --test` |
+| 101 · 7 | Bugs ou cas limites corrigés, chacun avec un test écrit d’abord |
+| 101 · 8 | `CLAUDE.md` du labo : tests, interface en français, pas de bibliothèque externe, montants « 12,50 € », clé du localStorage à garder ; gain moyen par course |
+| 101 · 9 | Sous-agent `.claude/agents/relecteur.md` (Read, Grep, Glob) ; bouton pour supprimer une course |
+| 101 · 10 | Skill `/journal` qui tient `JOURNAL.md` ; totaux en gras |
+| 101 · 11 | `.mcp.json` : serveur `claude-code-docs` |
+| 101 · 12 | `.claude/settings.json` : hook qui bloque toute modification dans `protege/` ; hook Prettier en bonus, donc peut-être absent |
 
-- Pars de l’état laissé par la leçon précédente : ne recrée pas ce qui existe, ne casse aucune règle posée.
+- Pars de l’état laissé par la leçon précédente, même si elle est dans le cours d’avant : ne recrée
+  pas ce qui existe, ne casse aucune règle posée.
 - Le labo de chaque apprenant peut différer un peu : les prompts demandent à Claude de lire le
   code d’abord, au lieu de supposer un nom de fonction ou de fichier.
 - Réutilise ce qui existe quand ça a du sens : `node --test`, le relecteur, `/journal`, `claude-code-docs`.
 - Un nouveau projet sur plusieurs leçons : nomme-le dès la première (dépôt ou dossier, à quoi il
   sert). Chaque exercice suivant rappelle en une phrase où on en est (« On reprend … là où la
-  leçon 14 l’a laissé »). Chaque leçon ajoute une étape qui marche seule et finit par une PR fusionnée.
-- Mets ce tableau à jour dans le même commit que la leçon : une ligne par leçon qui modifie un projet.
+  leçon 3 l’a laissé »). Chaque leçon ajoute une étape qui marche seule et finit par une PR fusionnée.
+- Mets ce tableau à jour dans le même commit que la leçon : une ligne par leçon qui modifie un
+  projet, avec un nom court du cours dans la première colonne.
 
-## 6. Avant de valider un ajout
+## 7. Avant de valider un ajout
 
-1. La commande de vérification affiche « Contenu OK ».
-2. Les textes qui citent le nombre de leçons sont à jour : « Douze leçons » dans `app.jsx` et
-   `app.js`, « 12 leçons » dans `README.md`. Si le contenu dépasse le programme officiel, adapte
-   « À propos de ce parcours » (`app.jsx` et `app.js`), qui dit suivre les mêmes leçons.
-3. `CACHE` est incrémenté dans `sw.js` (`cc101fr-v4` devient `cc101fr-v5`, etc.), et tout nouveau
+1. Les hooks ne signalent plus rien, et la commande de vérification affiche « Contenu OK ».
+2. `CACHE` est incrémenté dans `sw.js` (`cc101fr-v5` devient `cc101fr-v6`, etc.), et tout nouveau
    fichier est ajouté à `FICHIERS`.
-4. Le tableau du labo (partie 5) est à jour.
+3. `README.md` est à jour : nombre de leçons, liste des fichiers.
+4. Le tableau du labo (partie 6) est à jour.
 5. Relis comme l’apprenant : chaque étape se fait sur iPad, chaque prompt se copie, rien ne
    contredit une leçon précédente.
 6. Message de commit en français, à l’infinitif : « Ajouter la leçon 13 : … ».
