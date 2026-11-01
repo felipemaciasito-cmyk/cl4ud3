@@ -7,10 +7,10 @@ Parcours non officiel, rédigé par Claude à partir du programme public du cour
 ## Mettre l’appli en ligne depuis l’iPad
 
 1. **Enregistre les fichiers** dans un même dossier de l’app Fichiers.
-2. Dans Safari, sur github.com, crée un nouveau dépôt, par exemple `claude-code-101`. Choisis **Public**, sans cocher l’option README, puis « Create repository ».
+2. Dans Safari, sur github.com, crée un nouveau dépôt, par exemple `cl4ud3`. Choisis **Public**, sans cocher l’option README, puis « Create repository ».
 3. Sur la page du dépôt vide, touche le lien **« uploading an existing file »**. Touche « choose your files », sélectionne **tous les fichiers** du dossier, puis touche « Commit changes ».
 4. Va dans **Settings**, puis **Pages**. Dans « Build and deployment », choisis « Deploy from a branch », la branche `main` et le dossier `/ (root)`, puis **Save**.
-5. Une ou deux minutes plus tard, l’adresse s’affiche en haut de la page Pages. Elle ressemble à `https://ton-pseudo.github.io/claude-code-101/`.
+5. Une ou deux minutes plus tard, l’adresse s’affiche en haut de la page Pages. Elle ressemble à `https://ton-pseudo.github.io/cl4ud3/`.
 
 ## L’installer comme une appli
 
