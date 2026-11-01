@@ -20,6 +20,27 @@ function renderTutorAnswer(value){
   }).join("");
  }).join("");
 }
+function parseTutorPayload(raw){
+ const text=String(raw||"").trim();
+ try{
+  const clean=text.replace(/^\uFEFF/,"").replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"");
+  const value=JSON.parse(clean);
+  if(value&&typeof value==="object")return value;
+ }catch{}
+ return {message:text,options:[]};
+}
+function renderTutorPayload(raw){
+ const data=parseTutorPayload(raw);
+ const message=String(data.message||data.question||data.text||"");
+ const options=Array.isArray(data.options)?data.options:[];
+ const safeOptions=options.slice(0,8).map((option,index)=>{
+  const label=typeof option==="string"?option:String(option.label||option.text||option.value||"");
+  const value=typeof option==="string"?option:String(option.value||option.label||option.text||"");
+  if(!label.trim())return "";
+  return '<button type="button" class="tutor-choice" data-ai-choice="'+index+'" data-ai-value="'+esc(value)+'">'+esc(label)+'</button>';
+ }).filter(Boolean).join("");
+ return '<div class="ai-answer">'+renderTutorAnswer(message)+'</div>'+(safeOptions?'<div class="tutor-choices" aria-label="Choisir une réponse">'+safeOptions+'</div>':"");
+}
 function readAI(){try{return JSON.parse(localStorage.getItem(AI_STORE)||"{}")}catch{return{}}}
 function writeAI(x){localStorage.setItem(AI_STORE,JSON.stringify(x))}
 function topicsFor(l){
@@ -121,7 +142,7 @@ function render(){
  const x=items.find(i=>i.id===id);if(!x)return;
  const modal=document.getElementById("detail-modal");
  modal.hidden=false;
- modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Les captures ajoutées dans « Ajouter une difficulté » sont jointes automatiquement à cette fiche et transmises à Claude. Tu n’as pas besoin de les importer une deuxième fois.</p><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">${(x.images||[]).length?"Analyse automatique de la capture en préparation…":"Ajoute une capture ou écris une question pour commencer."}</p></div><label class="tutor-question-label" for="tutor-question">Répondre à Claude ou préciser ta demande <span class="rev-tiny">(facultatif)</span><textarea id="tutor-question" rows="3" placeholder="Écris ici uniquement si Claude te pose une question ou si tu veux préciser quelque chose…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Envoyer à Claude</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
+ modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Les captures ajoutées dans « Ajouter une difficulté » sont jointes automatiquement à cette fiche et transmises à Claude. Tu n’as pas besoin de les importer une deuxième fois. Claude te proposera uniquement des questions ciblées ou des choix à sélectionner.</p><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">${(x.images||[]).length?"Analyse automatique de la capture en préparation…":"Ajoute une capture ou écris une question pour commencer."}</p></div><label class="tutor-question-label" for="tutor-question">Répondre à Claude (facultatif)<textarea id="tutor-question" rows="3" placeholder="Facultatif : ajoute une précision si les choix proposés ne suffisent pas…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Envoyer ma réponse</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
  const savedPreview=document.getElementById("saved-image-preview");
  if((x.images||[]).length){
   savedPreview.innerHTML='<p class="rev-small">Captures déjà enregistrées avec cette difficulté :</p>'+x.images.map((src,i)=>'<img class="saved-exercise-image" src="'+src+'" alt="Capture enregistrée '+(i+1)+'">').join("");
@@ -135,21 +156,22 @@ function render(){
  if((x.images||[]).length&&!window.__cc101TutorHistory.length&&ai.endpoint){askAI(x);}
  else if((x.images||[]).length&&!ai.endpoint){document.getElementById("tutor-content").innerHTML='<p class="error-text">La capture est enregistrée. Configure et teste la connexion à Claude dans le panneau « Assistant intelligent » pour lancer son analyse automatique.</p>';}
  }
- async function askAI(x){
+ async function askAI(x, selectedAnswer=""){
  const out=document.getElementById("tutor-content"),btn=document.getElementById("ask-ai");
  const question=document.getElementById("tutor-question");
  let history=x.tutorHistory||(window.__cc101TutorHistory||(window.__cc101TutorHistory=[]));
  if(!ai.endpoint||btn.disabled)return;
  const files=[];
- if(!question.value.trim()&&!(x.images||[]).length){out.insertAdjacentHTML("beforeend",'<p class="error-text">Cette difficulté ne contient aucune capture. Ajoute une image dans « Ajouter une difficulté » ou écris une question.</p>');return;}
+ if(!selectedAnswer&&!question.value.trim()&&!(x.images||[]).length){out.insertAdjacentHTML("beforeend",'<p class="error-text">Cette difficulté ne contient aucune capture. Ajoute une image dans « Ajouter une difficulté » ou écris une question.</p>');return;}
  btn.disabled=true;btn.textContent="Analyse en cours…";
  out.insertAdjacentHTML("beforeend",'<p class="rev-small" id="tutor-pending">Claude analyse ton exercice et prépare une réponse…</p>');
  try{
   const imageParts=(x.images||[]).map(dataUrl=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data:dataUrl.split(",")[1]}}));
-  const userText=question.value.trim()||(imageParts.length?"Analyse immédiatement toutes les captures jointes. Commence par identifier et présenter les différents sujets, notions, concepts, commandes ou langages qui semblent concernés. Distingue les pistes certaines des pistes possibles et explique brièvement les indices visibles. Recommande le sujet prioritaire à travailler. Si un élément indispensable reste incertain, pose-moi une question ciblée. Ne donne pas encore une longue leçon : cette première réponse sert à cadrer les sujets.":"Aide-moi à comprendre cette difficulté.");
+  const outputFormat="Réfléchis en interne, mais ne révèle jamais ton raisonnement détaillé ni tes étapes de réflexion. Dans l'interface, affiche uniquement une courte question de clarification OU une courte suggestion, puis des choix cliquables. Réponds STRICTEMENT en JSON valide, sans Markdown, selon ce format : {\\"message\\":\\"Une phrase courte et directement utile.\\",\\"options\\":[{\\"label\\":\\"Texte visible du choix\\",\\"value\\":\\"Réponse à envoyer si ce choix est cliqué\\"}]}. Propose 2 à 5 choix concrets lorsque c'est pertinent. Les choix doivent être distincts, faciles à comprendre et permettre de cerner le problème. Si aucune question n'est nécessaire, propose les prochaines pistes à explorer. Ne donne ni cours, ni explication longue, ni résumé de ton analyse. Si l'apprenant doit répondre librement, laisse options vide et pose une seule question courte.";
+  const userText=selectedAnswer?"L'apprenant a sélectionné cette réponse : "+selectedAnswer+". Poursuis en posant une seule question ciblée ou en proposant les choix suivants. "+outputFormat:question.value.trim()||(imageParts.length?"Analyse la capture en interne. Identifie les notions possibles et les incertitudes, puis aide l'apprenant à préciser le problème par une question courte et des choix cliquables. Ne montre pas ton analyse. "+outputFormat:"Aide-moi à cerner cette difficulté avec une question courte et des choix cliquables. "+outputFormat);
   const content=[...imageParts,{type:"text",text:userText}];
   if(!history.length){
-   content.unshift({type:"text",text:"Tu es un tuteur pédagogique expert en programmation et Claude Code. Aide un apprenant débutant francophone. Lors de la première analyse d’une capture, identifie et liste les différents sujets, notions, concepts, commandes et langages potentiellement concernés. Explique brièvement les indices visibles, distingue certitudes et hypothèses, puis recommande le sujet prioritaire. Pose une question ciblée seulement si nécessaire. Ensuite, attends les précisions de l’apprenant et accompagne-le progressivement. Ne devine jamais le contenu illisible."});
+   content.unshift({type:"text",text:"Tu es un tuteur pédagogique expert en programmation et Claude Code. Aide un apprenant débutant francophone. Analyse les captures et le contexte en interne. Ne révèle jamais ton raisonnement détaillé. Dans l’interface, affiche uniquement une question courte ou une suggestion concrète avec des choix cliquables. N’affiche pas de longues explications ni de cours pendant cette phase de diagnostic. Ne devine jamais le contenu illisible."});
   }
   history.push({role:"user",content});
   const res=await fetch(ai.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:history})});
@@ -160,14 +182,15 @@ function render(){
   history.push({role:"assistant",content:[{type:"text",text:answer}]});
   x.tutorHistory=history;save(x);
   document.getElementById("tutor-pending")?.remove();
-  out.insertAdjacentHTML("beforeend",'<div class="tutor-turn"><span class="tutor-role">Claude</span><div class="ai-answer">'+renderTutorAnswer(answer)+'</div></div>');
+  const turn=document.createElement("div");turn.className="tutor-turn";turn.innerHTML='<span class="tutor-role">Claude</span>'+renderTutorPayload(answer);out.appendChild(turn);
+  turn.querySelectorAll("[data-ai-choice]").forEach(choice=>choice.addEventListener("click",()=>{const value=choice.dataset.aiValue;document.getElementById("tutor-question").value="";askAI(x,value);}));
   question.value="";
   out.scrollTop=out.scrollHeight;
  }catch(err){
   history.pop();
   document.getElementById("tutor-pending")?.remove();
   out.insertAdjacentHTML("beforeend",'<p class="error-text">'+esc(err.message)+'</p>');
- }finally{btn.disabled=false;btn.textContent="Envoyer à Claude";}
+ }finally{btn.disabled=false;btn.textContent="Envoyer ma réponse";}
 }
 async function imageToStoredDataUrl(file){
  const source=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error("Impossible de lire l’image."));reader.readAsDataURL(file);});
