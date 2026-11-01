@@ -121,7 +121,11 @@ function render(){
  const x=items.find(i=>i.id===id);if(!x)return;
  const modal=document.getElementById("detail-modal");
  modal.hidden=false;
- modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Ajoute une ou plusieurs captures de ton exercice. Claude analysera l’énoncé, le code et les consignes. S’il manque une information, il te posera des questions ciblées.</p><label class="image-upload">Captures d’écran de l’exercice<input id="exercise-images" type="file" accept="image/png,image/jpeg,image/webp" multiple ${ai.endpoint?"":"disabled"}><span class="rev-tiny">Jusqu’à 3 images. Elles sont envoyées à Claude avec ta question et ne sont pas enregistrées dans ton carnet.</span></label><div id="image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">Décris ce que tu ne comprends pas, ou envoie simplement la capture pour commencer.</p></div><label class="tutor-question-label" for="tutor-question">Ta question ou ta réponse à Claude<textarea id="tutor-question" rows="3" placeholder="Ex. : Je ne comprends pas ce que l’exercice attend de moi…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Analyser l’exercice avec Claude</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
+ modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Ajoute une ou plusieurs captures de ton exercice. Claude analysera l’énoncé, le code et les consignes. S’il manque une information, il te posera des questions ciblées.</p><label class="image-upload">Captures d’écran de l’exercice<input id="exercise-images" type="file" accept="image/png,image/jpeg,image/webp" multiple ${ai.endpoint?"":"disabled"}><span class="rev-tiny">Jusqu’à 3 images. Elles sont envoyées à Claude avec ta question et ne sont pas enregistrées dans ton carnet.</span></label><div id="image-preview" class="image-preview"></div><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">Décris ce que tu ne comprends pas, ou envoie simplement la capture pour commencer.</p></div><label class="tutor-question-label" for="tutor-question">Ta question ou ta réponse à Claude<textarea id="tutor-question" rows="3" placeholder="Ex. : Je ne comprends pas ce que l’exercice attend de moi…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Analyser l’exercice avec Claude</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
+ const savedPreview=document.getElementById("saved-image-preview");
+ if((x.images||[]).length){
+  savedPreview.innerHTML='<p class="rev-small">Captures déjà enregistrées avec cette difficulté :</p>'+x.images.map((src,i)=>'<img class="saved-exercise-image" src="'+src+'" alt="Capture enregistrée '+(i+1)+'">').join("");
+ }else{savedPreview.innerHTML='<p class="rev-small">Aucune capture enregistrée avec cette difficulté.</p>';}
  const close=()=>modal.hidden=true;
  document.getElementById("close-modal").onclick=close;document.getElementById("close-bottom").onclick=close;
  document.getElementById("detail-status").onchange=e=>{x.status=e.target.value;x.updatedAt=Date.now();save(x);refresh();};
@@ -132,7 +136,7 @@ function render(){
   const preview=document.getElementById("image-preview");
   const files=Array.from(imagePicker.files||[]).slice(0,3);
   preview.innerHTML=files.map((f,i)=>'<div class="image-preview-item"><span>'+esc(f.name)+'</span><small>'+Math.round(f.size/1024)+' Ko</small></div>').join("");
-  if(imagePicker.files.length>3){out.insertAdjacentHTML("beforeend",'<p class="error-text">Seules les 3 premières images seront utilisées.</p>');}
+  if(imagePicker.files.length>3){preview.insertAdjacentHTML("beforeend",'<p class="error-text">Seules les 3 premières images seront utilisées.</p>');}
  });
  document.getElementById("ask-ai").onclick=()=>askAI(x);
  }
@@ -141,7 +145,7 @@ function render(){
  const picker=document.getElementById("exercise-images"),question=document.getElementById("tutor-question");
  if(!ai.endpoint||btn.disabled)return;
  const files=Array.from(picker.files||[]);
- if(!question.value.trim()&&!files.length){question.focus();question.placeholder="Écris une question ou ajoute une capture d’écran.";return;}
+ if(!question.value.trim()&&!files.length&&!(x.images||[]).length){question.focus();question.placeholder="Écris une question ou ajoute une capture d’écran.";return;}
  if(files.length>3){out.innerHTML='<p class="error-text">Choisis au maximum 3 captures à la fois.</p>';return;}
  btn.disabled=true;btn.textContent="Analyse en cours…";
  out.insertAdjacentHTML("beforeend",'<p class="rev-small" id="tutor-pending">Claude analyse ton exercice et prépare une réponse…</p>');
@@ -152,7 +156,7 @@ function render(){
    if(file.size>12*1024*1024)throw Error("Une image dépasse 12 Mo : "+file.name);
    imageParts.push(await imageToAnthropicPart(file));
   }
-  const userText=question.value.trim()||"Analyse cette capture d’exercice. Identifie le sujet, explique ce qui est demandé et aide-moi à comprendre.";
+  const userText=question.value.trim()||(imageParts.length?"Analyse les captures de cet exercice enregistrées avec ma difficulté. Identifie le sujet, explique ce qui est demandé et aide-moi à comprendre.":"Analyse cette capture d’exercice. Identifie le sujet, explique ce qui est demandé et aide-moi à comprendre.");
   const history=window.__cc101TutorHistory||(window.__cc101TutorHistory=[]);
   const content=[...imageParts,{type:"text",text:userText}];
   if(!history.length){
