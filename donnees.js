@@ -278,7 +278,7 @@ export const LECONS = [
       { type: "tableau", entetes: ["Commande", "Ce qu’elle fait", "Sur le web"], lignes: [
         ["`/context`", "Montre ce qui occupe le contexte", "Oui"],
         ["`/compact`", "Résume la conversation maintenant. Tu peux dire quoi garder : `/compact garde les décisions sur le stockage`", "Oui"],
-        ["`/clear`", "Repart d’un contexte vide", "Non : ouvre une nouvelle session depuis la barre latérale"],
+        ["`/clear`", "Repart d’un contexte vide", "Oui, dans la même session. Une nouvelle session marche aussi"],
       ] },
       { type: "h2", t: "Les bonnes habitudes" },
       { type: "liste", items: [
@@ -290,7 +290,7 @@ export const LECONS = [
     ],
     retenir: [
       "Le contexte, c’est tout ce que Claude a en tête pendant la session.",
-      "/context pour voir, /compact pour résumer, nouvelle session pour repartir à zéro.",
+      "/context pour voir, /compact pour résumer, /clear ou une nouvelle session pour repartir à zéro.",
       "Ce qui doit durer va dans CLAUDE.md.",
     ],
     exercice: {
@@ -298,7 +298,7 @@ export const LECONS = [
         { t: "Retourne dans la session de la leçon 5 (barre latérale de claude.ai/code) et tape :", p: "/context", a: "Repère ce qui prend le plus de place." },
         { t: "Tape :", p: "/compact garde seulement les décisions sur l’enregistrement des courses et la commande de test" },
         { t: "Retape `/context` et compare avec la première fois." },
-        { t: "Pour la leçon suivante, ouvre une nouvelle session depuis la barre latérale : c’est l’équivalent web de `/clear`." },
+        { t: "Pour la leçon suivante, ouvre une nouvelle session depuis la barre latérale. Tu pourrais aussi taper `/clear` : la conversation repartirait de zéro, dans la même session." },
       ],
       details: [
         { titre: "Pourquoi ne pas tout faire dans une seule session ?", t: [
@@ -324,7 +324,7 @@ export const LECONS = [
       { type: "h3", t: "Demande des preuves" },
       { type: "p", t: "La commande lancée et sa sortie, ou une capture d’écran. « Tous les tests passent », seul, ne te dit presque rien." },
       { type: "h3", t: "Fais relire par quelqu’un qui n’a pas écrit le code" },
-      { type: "p", t: "Une nouvelle session ou un sous-agent ne connaît pas le raisonnement qui a produit le code : il le voit autrement. Demande-lui d’ignorer le style. Un relecteur à qui l’on demande des problèmes en trouvera toujours, et tout corriger alourdit le code. Dans le terminal, la commande `/code-review` fait exactement ça ; sur le web, il suffit de le demander." },
+      { type: "p", t: "Une nouvelle session ou un sous-agent ne connaît pas le raisonnement qui a produit le code : il le voit autrement. Demande-lui d’ignorer le style. Un relecteur à qui l’on demande des problèmes en trouvera toujours, et tout corriger alourdit le code. La commande `/code-review` fait exactement ça, sur le web comme dans le terminal. Si elle n’est pas reconnue, il suffit de le demander." },
       { type: "h3", t: "Relis toi-même le diff" },
       { type: "p", t: "Pas besoin de tout comprendre. Cherche ce qui te surprend : un fichier modifié que tu n’attendais pas, une suppression importante, un texte bizarre. Et demande des explications sur les lignes que tu ne comprends pas : c’est aussi comme ça qu’on apprend à coder." },
     ],
@@ -586,7 +586,7 @@ export const QUIZ = [
   { q: "Quelle est la principale différence entre Claude dans le chat et Claude Code ?", o: ["Claude Code utilise un modèle plus intelligent", "Claude Code agit sur ton projet : il lit, modifie et lance des commandes", "Claude Code ne fonctionne qu’en anglais", "Claude Code n’a pas besoin d’instructions"], b: 1, e: "Le modèle peut être le même. Ce sont les outils qui font de Claude Code un agent.", l: 1 },
   { q: "Quelles sont les trois phases de la boucle agentive ?", o: ["Planifier, coder, publier", "Rassembler le contexte, agir, vérifier", "Lire, écrire, supprimer", "Demander, attendre, répondre"], b: 1, e: "Claude enchaîne ces trois phases, et refait un tour selon ce qu’il découvre.", l: 2 },
   { q: "Tu veux que Claude propose une approche sans toucher aux fichiers. Quel mode choisis-tu ?", o: ["Auto", "Accepter les modifications", "Plan", "Manuel"], b: 2, e: "En mode Plan, Claude explore et propose, sans modifier.", l: 4 },
-  { q: "Sur claude.ai/code, comment repars-tu d’un contexte vide ?", o: ["/clear", "/compact", "Une nouvelle session depuis la barre latérale", "Je recharge la page"], b: 2, e: "/clear n’existe pas dans les sessions web : on ouvre une nouvelle session.", l: 6 },
+  { q: "Sur claude.ai/code, que fait /clear ?", o: ["Il supprime la session", "Il efface tes fichiers", "Il repart d’une conversation vide, dans la même session", "Il n’existe pas sur le web"], b: 2, e: "Ouvrir une nouvelle session depuis la barre latérale donne aussi un contexte vide.", l: 6 },
   { q: "Que fait /compact ?", o: ["Il supprime les fichiers inutiles", "Il résume la conversation pour libérer du contexte", "Il compresse le code", "Il ferme la session"], b: 1, e: "Tu peux même préciser ce qu’il faut garder : /compact garde les décisions sur X.", l: 6 },
   { q: "Deux corrections de suite n’ont pas marché. Le mieux est de :", o: ["Réécrire la consigne en MAJUSCULES", "Insister une troisième fois", "Repartir d’une nouvelle session avec un meilleur prompt", "Passer en mode Auto"], b: 2, e: "Sinon, Claude continue de relire tes tentatives ratées.", l: 4 },
   { q: "Qu’est-ce qui a sa place dans CLAUDE.md ?", o: ["La description de chaque fichier", "La commande pour lancer les tests", "Tout l’historique du projet", "Tes mots de passe"], b: 1, e: "Seulement ce que Claude ne peut pas trouver en lisant le code. Et jamais de secrets.", l: 8 },

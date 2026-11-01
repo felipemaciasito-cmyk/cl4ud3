@@ -123,7 +123,7 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 - Tout texte à envoyer à Claude va dans un prompt (`p` ou `p2`), avec son bouton Copier :
   l’apprenant ne tape à la main que des commandes courtes, comme `/context`.
 - Une commande réservée au terminal ou à l’ordinateur est présentée comme une information, avec
-  son équivalent sur le web (`/clear` devient « nouvelle session depuis la barre latérale »).
+  son équivalent sur le web (`/schedule` devient « une tâche planifiée créée sur claude.ai/code/routines »).
 - Libellés de boutons entre « », tels qu’ils s’affichent, même en anglais (« Merge pull request »),
   avec ce qu’ils font en français. Pas sûr du libellé exact : décris où est le bouton.
 - Fais vérifier le résultat sur l’iPad : l’appli du labo ouverte dans Safari, sur GitHub Pages.
@@ -159,6 +159,15 @@ livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un n
 | 101 · 10 | Skill `/journal` qui tient `JOURNAL.md` ; totaux en gras |
 | 101 · 11 | `.mcp.json` : serveur `claude-code-docs` |
 | 101 · 12 | `.claude/settings.json` : hook qui bloque toute modification dans `protege/` ; hook Prettier en bonus, donc peut-être absent |
+| En action · 1 | Totaux du mois en cours, testés aussi pour un mois sans course |
+| En action · 2 | `CLAUDE.md` réécrit en règles précises et vérifiables ; nombre de courses du mois |
+| En action · 3 | Skill `verifier` (`SKILL.md`, `verifier.sh`) qui se lance seul ; meilleure course en €/km affichée |
+| En action · 4 | Bouton pour vider le formulaire de saisie |
+| En action · 5 | Hooks `Stop` (lance `node --test`) et `SessionStart` (matcher `compact`), scripts dans `.claude/hooks/` |
+| En action · 6 | Tâche planifiée « Contrôle du labo » sur claude.ai, rien dans le dépôt ; peut-être suspendue |
+| En action · 7 | `.github/workflows/tests.yml` : `node --test` à chaque PR ; gain en €/km de chaque course |
+| En action · 8 | Hook `PostToolUse` qui lance `node --check` sur chaque `.js` modifié ; export CSV |
+| En action · 9 | Dossier `plugin-labo/` avec son manifeste : relecteur, `journal`, `verifier`, hooks, MCP |
 
 - Pars de l’état laissé par la leçon précédente, même si elle est dans le cours d’avant : ne recrée
   pas ce qui existe, ne casse aucune règle posée.
