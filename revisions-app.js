@@ -8,6 +8,18 @@ const date = (v) => new Intl.DateTimeFormat("fr-FR",{dateStyle:"medium"}).format
 const uid = () => "r" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 function readItems(){try{const x=JSON.parse(localStorage.getItem(STORE)||"[]");return Array.isArray(x)?x:[]}catch{return[]}}
 function writeItems(x){localStorage.setItem(STORE,JSON.stringify(x))}
+function renderTutorAnswer(value){
+ const safe=esc(value).replace(/\r\n?/g,"\n");
+ const fence=String.fromCharCode(96,96,96);
+ return safe.split(fence).map((part,index)=>{
+  if(index%2===1){const code=part.replace(/^[a-zA-Z0-9_-]+\n/,"");return '<pre class="tutor-code"><code>'+code+'</code></pre>';}
+  return part.split(/\n{2,}/).map(paragraph=>{
+   let html=paragraph.replace(/^###?\s+(.+)$/gm,'<h4>$1</h4>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>').replace(/^(\d+)\.\s+(.+)$/gm,'<li>$2</li>');
+   if(/<li>/.test(html))html='<ul>'+html+'</ul>';else if(!/^<h4>/.test(html))html=html.replace(/\n/g,'<br>');
+   return '<div class="tutor-paragraph">'+html+'</div>';
+  }).join("");
+ }).join("");
+}
 function readAI(){try{return JSON.parse(localStorage.getItem(AI_STORE)||"{}")}catch{return{}}}
 function writeAI(x){localStorage.setItem(AI_STORE,JSON.stringify(x))}
 function topicsFor(l){
@@ -119,12 +131,13 @@ function render(){
  const out=document.getElementById("tutor-content"),btn=document.getElementById("ask-ai");
  if(!ai.endpoint)return;
  btn.disabled=true;btn.textContent="Préparation en cours…";out.innerHTML='<p class="rev-small">L’assistant prépare une réponse adaptée à cette notion.</p>';
- const prompt=`Tu es un tuteur pédagogique expert en programmation et Claude Code. Tu accompagnes un apprenant débutant francophone. Réponds en français, avec rigueur et pédagogie. Pour cette difficulté, fournis : 1) une explication progressive et précise, 2) une analogie ou un exemple concret, 3) deux exemples de code commentés si pertinent, 4) trois erreurs fréquentes, 5) trois exercices progressifs avec leurs corrigés masqués sous une section distincte. Ne suppose aucune connaissance non acquise.\nCours : ${x.courseTitle}\nLeçon : ${x.lessonTitle}\nNotion : ${x.topicTitle}\nDifficulté : ${x.description}`;
+ const prompt=`Tu es un tuteur pédagogique de programmation pour un débutant francophone. Réponds en français, simplement et précisément. Fais une réponse courte, utile et complète : 1) explication en 3 à 5 phrases maximum ; 2) un exemple concret ou un petit code commenté ; 3) deux pièges fréquents ; 4) deux mini-exercices progressifs, avec les corrections dans une section finale distincte. Limite-toi à environ 250 mots. Évite les longues introductions, les répétitions et les notions non encore étudiées. Utilise des titres courts, des listes et des blocs de code seulement si nécessaires. Termine chaque idée et chaque phrase : ne coupe jamais une explication au milieu.\nCours : ${x.courseTitle}\nLeçon : ${x.lessonTitle}\nNotion : ${x.topicTitle}\nQuestion de l’apprenant : ${x.description}`;
  try{
  const res=await fetch(ai.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:prompt}],temperature:0.3})});
  if(!res.ok)throw new Error("Le service IA a répondu avec le statut "+res.status);
  const data=await res.json();const answer=data.choices?.[0]?.message?.content||data.answer||data.content||"Réponse vide du service IA.";
- out.innerHTML=`<div class="ai-answer">${esc(answer).replace(/\n/g,"<br>")}</div>`;
+ out.innerHTML=`<div class="ai-answer">${renderTutorAnswer(answer)}</div>`;
+ out.scrollIntoView({behavior:"smooth",block:"nearest"});
  }catch(err){out.innerHTML=`<p class="error-text">${esc(err.message)}. Vérifie l’adresse du service et sa configuration CORS.</p>`;}
  finally{btn.disabled=false;btn.textContent="Régénérer l’explication et les exercices";}
  }
