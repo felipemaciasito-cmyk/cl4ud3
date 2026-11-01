@@ -49,3 +49,12 @@
 @media(max-width:520px){.image-preview-item{font-size:.75rem}.tutor-turn{padding:.7rem}}
 
 .saved-exercise-image{display:block;width:100%;max-height:280px;object-fit:contain;background:var(--fond);border:1px solid var(--bord);border-radius:.65rem;margin:.5rem 0}
+
+
+/* Diagnostic interactif : réponses proposées sous forme de choix cliquables */
+.tutor-choices{display:grid;grid-template-columns:1fr;gap:.55rem;margin:.85rem 0 .2rem}
+.tutor-choice{display:block;width:100%;text-align:left;padding:.8rem .9rem;border:1px solid var(--bord);border-radius:.7rem;background:var(--fond);color:var(--encre);font:600 .9rem/1.45 var(--texte);cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+.tutor-choice:after{content:"›";float:right;margin-left:.7rem;color:var(--discret);font-size:1.15rem}
+.tutor-choice:hover{border-color:var(--ambre);background:var(--ambre-doux)}
+.tutor-choice:focus-visible{outline:3px solid var(--ambre);outline-offset:2px}
+.tutor-choice:active{transform:scale(.99)}
