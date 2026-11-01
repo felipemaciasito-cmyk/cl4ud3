@@ -121,7 +121,7 @@ function render(){
  const x=items.find(i=>i.id===id);if(!x)return;
  const modal=document.getElementById("detail-modal");
  modal.hidden=false;
- modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Les captures ajoutées dans « Ajouter une difficulté » sont jointes automatiquement à cette fiche et transmises à Claude. Tu n’as pas besoin de les importer une deuxième fois.</p><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">Décris ce que tu ne comprends pas, ou envoie simplement la capture pour commencer.</p></div><label class="tutor-question-label" for="tutor-question">Ta question ou ta réponse à Claude<textarea id="tutor-question" rows="3" placeholder="Ex. : Je ne comprends pas ce que l’exercice attend de moi…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Analyser l’exercice avec Claude</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
+ modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Les captures ajoutées dans « Ajouter une difficulté » sont jointes automatiquement à cette fiche et transmises à Claude. Tu n’as pas besoin de les importer une deuxième fois.</p><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">${(x.images||[]).length?"Analyse automatique de la capture en préparation…":"Ajoute une capture ou écris une question pour commencer."}</p></div><label class="tutor-question-label" for="tutor-question">Répondre à Claude ou préciser ta demande <span class="rev-tiny">(facultatif)</span><textarea id="tutor-question" rows="3" placeholder="Écris ici uniquement si Claude te pose une question ou si tu veux préciser quelque chose…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Envoyer à Claude</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
  const savedPreview=document.getElementById("saved-image-preview");
  if((x.images||[]).length){
   savedPreview.innerHTML='<p class="rev-small">Captures déjà enregistrées avec cette difficulté :</p>'+x.images.map((src,i)=>'<img class="saved-exercise-image" src="'+src+'" alt="Capture enregistrée '+(i+1)+'">').join("");
@@ -130,8 +130,10 @@ function render(){
  document.getElementById("close-modal").onclick=close;document.getElementById("close-bottom").onclick=close;
  document.getElementById("detail-status").onchange=e=>{x.status=e.target.value;x.updatedAt=Date.now();save(x);refresh();};
  document.getElementById("delete-item").onclick=()=>{if(confirm("Supprimer cette difficulté ?")){writeItems(readItems().filter(y=>y.id!==id));close();refresh();}};
- window.__cc101TutorHistory=[];
+ window.__cc101TutorHistory=x.tutorHistory||[];
  document.getElementById("ask-ai").onclick=()=>askAI(x);
+ if((x.images||[]).length&&!window.__cc101TutorHistory.length&&ai.endpoint){askAI(x);}
+ else if((x.images||[]).length&&!ai.endpoint){document.getElementById("tutor-content").innerHTML='<p class="error-text">La capture est enregistrée. Configure et teste la connexion à Claude dans le panneau « Assistant intelligent » pour lancer son analyse automatique.</p>';}
  }
  async function askAI(x){
  const out=document.getElementById("tutor-content"),btn=document.getElementById("ask-ai");
@@ -143,11 +145,11 @@ function render(){
  out.insertAdjacentHTML("beforeend",'<p class="rev-small" id="tutor-pending">Claude analyse ton exercice et prépare une réponse…</p>');
  try{
   const imageParts=(x.images||[]).map(dataUrl=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data:dataUrl.split(",")[1]}}));
-  const userText=question.value.trim()||(imageParts.length?"Analyse de manière autonome toutes les captures jointes à cette difficulté. Identifie le sujet, le langage, la notion et la consigne. Explique ce que l’exercice cherche à faire apprendre. Si tu n’es pas certain d’avoir identifié précisément le sujet ou si une information manque, ne devine pas : pose-moi les questions les plus utiles, une par une. Je n’ai pas encore formulé de question ; prends l’initiative de comprendre les captures.":"Aide-moi à comprendre cette difficulté.");
-  const history=window.__cc101TutorHistory||(window.__cc101TutorHistory=[]);
+  const userText=question.value.trim()||(imageParts.length?"Analyse immédiatement toutes les captures jointes. Commence par identifier et présenter les différents sujets, notions, concepts, commandes ou langages qui semblent concernés. Distingue les pistes certaines des pistes possibles et explique brièvement les indices visibles. Recommande le sujet prioritaire à travailler. Si un élément indispensable reste incertain, pose-moi une question ciblée. Ne donne pas encore une longue leçon : cette première réponse sert à cadrer les sujets.":"Aide-moi à comprendre cette difficulté.");
+  const history=x.tutorHistory||(window.__cc101TutorHistory||(window.__cc101TutorHistory=[]));
   const content=[...imageParts,{type:"text",text:userText}];
   if(!history.length){
-   content.unshift({type:"text",text:"Tu es un tuteur pédagogique expert en programmation et Claude Code. Aide un apprenant débutant francophone. Analyse attentivement les captures d’écran fournies : lis l’énoncé, les consignes, le code et les éventuels messages d’erreur. Identifie précisément le langage, la notion et l’objectif de l’exercice. Si tu ne peux pas identifier le sujet avec certitude, explique ce que tu as pu reconnaître puis pose une ou deux questions ciblées avant de donner une solution. Ne devine jamais le contenu illisible. Explique progressivement, avec des exemples adaptés au niveau débutant. Si l’apprenant répond à tes questions, utilise tout l’historique pour poursuivre. Tu peux proposer une démarche et des indices avant de donner la solution complète."});
+   content.unshift({type:"text",text:"Tu es un tuteur pédagogique expert en programmation et Claude Code. Aide un apprenant débutant francophone. Lors de la première analyse d’une capture, identifie et liste les différents sujets, notions, concepts, commandes et langages potentiellement concernés. Explique brièvement les indices visibles, distingue certitudes et hypothèses, puis recommande le sujet prioritaire. Pose une question ciblée seulement si nécessaire. Ensuite, attends les précisions de l’apprenant et accompagne-le progressivement. Ne devine jamais le contenu illisible."});
   }
   history.push({role:"user",content});
   const res=await fetch(ai.endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:history})});
@@ -156,11 +158,13 @@ function render(){
   const answer=data.answer||data.content||data.choices?.[0]?.message?.content;
   if(typeof answer!=="string"||!answer.trim())throw Error("Claude n’a pas renvoyé de réponse exploitable.");
   history.push({role:"assistant",content:[{type:"text",text:answer}]});
+  x.tutorHistory=history;save(x);
   document.getElementById("tutor-pending")?.remove();
   out.insertAdjacentHTML("beforeend",'<div class="tutor-turn"><span class="tutor-role">Claude</span><div class="ai-answer">'+renderTutorAnswer(answer)+'</div></div>');
   question.value="";
   out.scrollTop=out.scrollHeight;
  }catch(err){
+  history.pop();
   document.getElementById("tutor-pending")?.remove();
   out.insertAdjacentHTML("beforeend",'<p class="error-text">'+esc(err.message)+'</p>');
  }finally{btn.disabled=false;btn.textContent="Envoyer à Claude";}
