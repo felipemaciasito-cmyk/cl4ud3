@@ -64,7 +64,7 @@ function render(){
  <form id="entry-form" class="rev-card rev-form">
  <div class="rev-fields two"><label>Type<select name="type"><option>Question</option><option>Doute</option><option>Erreur</option></select></label><label>Cours<select name="course" id="course-select"></select></label></div>
  <div class="rev-fields two"><label>Leçon<select name="lesson" id="lesson-select"></select></label><label>Notion concernée<select name="topic" id="topic-select"></select></label></div>
- <label>Ce qui te pose problème<textarea name="description" rows="3" placeholder="Décris ton erreur, ton doute ou ta question avec tes mots…" required></textarea></label>
+ <label>Ce qui te pose problème <span class="rev-tiny">(facultatif si tu ajoutes une capture)</span><textarea name="description" rows="3" placeholder="Tu peux laisser ce champ vide : Claude analysera ta capture."></textarea></label>
  <label class="image-upload">Captures d’écran de ton exercice <input id="entry-images" type="file" accept="image/png,image/jpeg,image/webp" multiple><span class="rev-tiny">Ajoute jusqu’à 3 images pour que le tuteur puisse identifier précisément l’exercice. Elles seront conservées avec cette difficulté sur cet appareil.</span></label><div id="entry-image-preview" class="image-preview"></div>
  <div class="rev-form-foot"><span class="rev-small">Enregistré sur cet appareil.</span><button class="rev-btn primary" type="submit">Ajouter au carnet</button></div>
  </form>
@@ -121,7 +121,7 @@ function render(){
  const x=items.find(i=>i.id===id);if(!x)return;
  const modal=document.getElementById("detail-modal");
  modal.hidden=false;
- modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Ajoute une ou plusieurs captures de ton exercice. Claude analysera l’énoncé, le code et les consignes. S’il manque une information, il te posera des questions ciblées.</p><label class="image-upload">Captures d’écran de l’exercice<input id="exercise-images" type="file" accept="image/png,image/jpeg,image/webp" multiple ${ai.endpoint?"":"disabled"}><span class="rev-tiny">Jusqu’à 3 images. Elles sont envoyées à Claude avec ta question et ne sont pas enregistrées dans ton carnet.</span></label><div id="image-preview" class="image-preview"></div><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">Décris ce que tu ne comprends pas, ou envoie simplement la capture pour commencer.</p></div><label class="tutor-question-label" for="tutor-question">Ta question ou ta réponse à Claude<textarea id="tutor-question" rows="3" placeholder="Ex. : Je ne comprends pas ce que l’exercice attend de moi…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Analyser l’exercice avec Claude</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
+ modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Les captures ajoutées dans « Ajouter une difficulté » sont jointes automatiquement à cette fiche et transmises à Claude. Tu n’as pas besoin de les importer une deuxième fois.</p><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">Décris ce que tu ne comprends pas, ou envoie simplement la capture pour commencer.</p></div><label class="tutor-question-label" for="tutor-question">Ta question ou ta réponse à Claude<textarea id="tutor-question" rows="3" placeholder="Ex. : Je ne comprends pas ce que l’exercice attend de moi…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Analyser l’exercice avec Claude</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
  const savedPreview=document.getElementById("saved-image-preview");
  if((x.images||[]).length){
   savedPreview.innerHTML='<p class="rev-small">Captures déjà enregistrées avec cette difficulté :</p>'+x.images.map((src,i)=>'<img class="saved-exercise-image" src="'+src+'" alt="Capture enregistrée '+(i+1)+'">').join("");
@@ -131,32 +131,19 @@ function render(){
  document.getElementById("detail-status").onchange=e=>{x.status=e.target.value;x.updatedAt=Date.now();save(x);refresh();};
  document.getElementById("delete-item").onclick=()=>{if(confirm("Supprimer cette difficulté ?")){writeItems(readItems().filter(y=>y.id!==id));close();refresh();}};
  window.__cc101TutorHistory=[];
- const imagePicker=document.getElementById("exercise-images");
- imagePicker.addEventListener("change",()=>{
-  const preview=document.getElementById("image-preview");
-  const files=Array.from(imagePicker.files||[]).slice(0,3);
-  preview.innerHTML=files.map((f,i)=>'<div class="image-preview-item"><span>'+esc(f.name)+'</span><small>'+Math.round(f.size/1024)+' Ko</small></div>').join("");
-  if(imagePicker.files.length>3){preview.insertAdjacentHTML("beforeend",'<p class="error-text">Seules les 3 premières images seront utilisées.</p>');}
- });
  document.getElementById("ask-ai").onclick=()=>askAI(x);
  }
  async function askAI(x){
  const out=document.getElementById("tutor-content"),btn=document.getElementById("ask-ai");
- const picker=document.getElementById("exercise-images"),question=document.getElementById("tutor-question");
+ const question=document.getElementById("tutor-question");
  if(!ai.endpoint||btn.disabled)return;
- const files=Array.from(picker.files||[]);
- if(!question.value.trim()&&!files.length&&!(x.images||[]).length){question.focus();question.placeholder="Écris une question ou ajoute une capture d’écran.";return;}
- if(files.length>3){out.innerHTML='<p class="error-text">Choisis au maximum 3 captures à la fois.</p>';return;}
+ const files=[];
+ if(!question.value.trim()&&!(x.images||[]).length){out.insertAdjacentHTML("beforeend",'<p class="error-text">Cette difficulté ne contient aucune capture. Ajoute une image dans « Ajouter une difficulté » ou écris une question.</p>');return;}
  btn.disabled=true;btn.textContent="Analyse en cours…";
  out.insertAdjacentHTML("beforeend",'<p class="rev-small" id="tutor-pending">Claude analyse ton exercice et prépare une réponse…</p>');
  try{
   const imageParts=(x.images||[]).map(dataUrl=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data:dataUrl.split(",")[1]}}));
-  for(const file of files){
-   if(!["image/png","image/jpeg","image/webp"].includes(file.type))throw Error("Format non pris en charge : "+file.name);
-   if(file.size>12*1024*1024)throw Error("Une image dépasse 12 Mo : "+file.name);
-   imageParts.push(await imageToAnthropicPart(file));
-  }
-  const userText=question.value.trim()||(imageParts.length?"Analyse les captures de cet exercice enregistrées avec ma difficulté. Identifie le sujet, explique ce qui est demandé et aide-moi à comprendre.":"Analyse cette capture d’exercice. Identifie le sujet, explique ce qui est demandé et aide-moi à comprendre.");
+  const userText=question.value.trim()||(imageParts.length?"Analyse de manière autonome toutes les captures jointes à cette difficulté. Identifie le sujet, le langage, la notion et la consigne. Explique ce que l’exercice cherche à faire apprendre. Si tu n’es pas certain d’avoir identifié précisément le sujet ou si une information manque, ne devine pas : pose-moi les questions les plus utiles, une par une. Je n’ai pas encore formulé de question ; prends l’initiative de comprendre les captures.":"Aide-moi à comprendre cette difficulté.");
   const history=window.__cc101TutorHistory||(window.__cc101TutorHistory=[]);
   const content=[...imageParts,{type:"text",text:userText}];
   if(!history.length){
@@ -226,8 +213,10 @@ async function imageToAnthropicPart(file){
    if(file.size>12*1024*1024)throw Error("Une image dépasse 12 Mo : "+file.name);
    images.push(await imageToStoredDataUrl(file));
   }
+  const description=fd.get("description").trim();
+  if(!description&&!images.length){alert("Ajoute une capture d’écran ou décris ta difficulté.");return;}
   const course=COURSE_REGISTRY.find(c=>c.id===fd.get("course")),lesson=course.lessons.find(l=>l.id===Number(fd.get("lesson")));
-  save({id:uid(),type:fd.get("type"),source:"manuel",courseId:course.id,courseTitle:course.title,lessonId:lesson.id,lessonTitle:lesson.titre,topicTitle:fd.get("topic"),description:fd.get("description").trim(),images,status:"a-comprendre",createdAt:Date.now(),updatedAt:Date.now(),occurrences:1});
+  save({id:uid(),type:fd.get("type"),source:"manuel",courseId:course.id,courseTitle:course.title,lessonId:lesson.id,lessonTitle:lesson.titre,topicTitle:fd.get("topic"),description:description||"Capture d’exercice à analyser par l’assistant.",images,status:"a-comprendre",createdAt:Date.now(),updatedAt:Date.now(),occurrences:1});
   form.reset();document.getElementById("entry-image-preview").innerHTML="";fillLessons();refresh();
  }catch(err){alert("Impossible d’ajouter cette difficulté : "+err.message);}
  finally{submit.disabled=false;submit.textContent="Ajouter au carnet";}
