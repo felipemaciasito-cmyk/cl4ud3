@@ -1,8 +1,8 @@
 # CL4UD3
 
-CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Premier cours : **Claude Code 101**. Chaque cours a ses leçons, ses exercices sur claude.ai/code et son quiz final d’une question à la fois ; le lexique est commun. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
+CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Cours : **Claude Code 101**, puis **Claude Code en action**. Chaque cours a ses leçons, ses exercices sur claude.ai/code et son quiz final d’une question à la fois ; le lexique est commun. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
 
-Parcours non officiel, rédigé par Claude à partir du programme public du cours Claude Code 101 (Claude Academy) et de la documentation officielle de Claude Code en français.
+Parcours non officiel, rédigé par Claude à partir des cours publics Claude Code 101 et Claude Code en action (Claude Academy) et de la documentation officielle de Claude Code en français.
 
 ## Mettre l’appli en ligne depuis l’iPad
 
@@ -32,6 +32,7 @@ Remplace seulement les fichiers modifiés : sur GitHub, « Add file », puis « 
 | `app.jsx` | Le code source lisible de l’application (pas chargé par la page) |
 | `cours.js` | La liste des cours, dans l’ordre du parcours |
 | `donnees.js` | Le contenu de Claude Code 101 : leçons, exercices, quiz, lexique |
+| `donnees-claude-code-en-action.js` | Le contenu de Claude Code en action |
 | `revisions.html`, `revisions.css`, `revisions-app.js` | Le carnet de révision |
 | `vendor-react.js` | La bibliothèque React, incluse pour marcher sans dépendance externe |
 | `sw.js` | Le service worker : fonctionnement hors ligne |
@@ -42,7 +43,7 @@ Remplace seulement les fichiers modifiés : sur GitHub, « Add file », puis « 
 | `tests/` | Les tests à passer après chaque import : `node tests/tout.mjs` |
 | `.github/workflows/tests.yml` | Les mêmes tests, relancés par GitHub sur chaque PR et chaque envoi vers `main` |
 
-Pour changer un texte, une leçon ou une question du quiz, il suffit de modifier le fichier de contenu du cours (`donnees.js` pour Claude Code 101). Ne modifie pas `app.js` à la main : il est regénéré à partir de `app.jsx`.
+Pour changer un texte, une leçon ou une question du quiz, il suffit de modifier le fichier de contenu du cours (`donnees.js` pour Claude Code 101, `donnees-claude-code-en-action.js` pour Claude Code en action). Ne modifie pas `app.js` à la main : il est regénéré à partir de `app.jsx`.
 
 ## Ajouter du contenu ou un nouveau cours
 
@@ -56,4 +57,4 @@ Après chaque import, les tests de `node tests/tout.mjs` doivent passer : la vé
 - Icônes : tracés de [Lucide](https://lucide.dev) (licence ISC).
 - [React](https://react.dev) (licence MIT).
 - Polices : Bricolage Grotesque et Atkinson Hyperlegible, via Google Fonts.
-- Pour le badge officiel, il faut passer le quiz du cours sur [academy.claude.com](https://academy.claude.com/fr/courses/claude-code-101).
+- Pour les badges officiels, il faut passer le quiz de chaque cours sur academy.claude.com : [Claude Code 101](https://academy.claude.com/fr/courses/claude-code-101), [Claude Code en action](https://academy.claude.com/fr/courses/claude-code-in-action).

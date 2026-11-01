@@ -1,8 +1,8 @@
 // Service worker : l’appli marche hors ligne après une première visite.
 // Stratégie : réseau d’abord (toujours la dernière version en ligne), cache en secours.
-const CACHE = "cc101fr-v9";
+const CACHE = "cc101fr-v10";
 const FICHIERS = [
-  "./", "index.html", "revisions.html", "revisions.css", "revisions-app.js", "styles.css", "app.js", "cours.js", "donnees.js", "vendor-react.js",
+  "./", "index.html", "revisions.html", "revisions.css", "revisions-app.js", "styles.css", "app.js", "cours.js", "donnees.js", "donnees-claude-code-en-action.js", "vendor-react.js",
   "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png", "apple-touch-icon.png"
 ];
 

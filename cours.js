@@ -4,6 +4,7 @@
 // Pour ajouter un cours : crée son fichier, importe-le ici et ajoute-le à la fin de COURS.
 // Ne change jamais l’id d’un cours : la progression et le carnet de révision l’enregistrent.
 import * as claudeCode101 from "./donnees.js";
+import * as claudeCodeEnAction from "./donnees-claude-code-en-action.js";
 
 export const COURS = [
   {
@@ -11,5 +12,11 @@ export const COURS = [
     titre: "Claude Code 101",
     source: { nom: "Claude Code 101, Claude Academy", url: "https://academy.claude.com/fr/courses/claude-code-101" },
     ...claudeCode101,
+  },
+  {
+    id: "claude-code-en-action",
+    titre: "Claude Code en action",
+    source: { nom: "Claude Code en action, Claude Academy", url: "https://academy.claude.com/fr/courses/claude-code-in-action" },
+    ...claudeCodeEnAction,
   },
 ];
