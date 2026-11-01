@@ -287,7 +287,7 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
 
 /* pastilles segmentées (inspirées du « Segmented Progress Pill Stepper ») */
 .pastilles { display: flex; gap: .3rem; margin-bottom: 1.6rem; }
-.pastilles a { flex: 1 1 0; display: flex; align-items: center; min-height: 32px; transition: flex-grow .4s cubic-bezier(.2, .8, .2, 1); }
+.pastilles a { flex: 1 1 0; display: flex; align-items: center; min-height: 44px; transition: flex-grow .4s cubic-bezier(.2, .8, .2, 1); }
 .pastilles a span { display: block; width: 100%; height: .5rem; border-radius: 99px; background: var(--bord); transition: background-color .3s; }
 .pastilles a[data-statut="fait"] span { background: var(--succes); }
 .pastilles a[data-statut="courant"] { flex-grow: 3.2; }
@@ -355,7 +355,7 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
   padding: .4rem .45rem .2rem .9rem; font-size: .85rem; color: var(--discret);
 }
 .copier {
-  display: inline-flex; align-items: center; gap: .35rem; min-height: 40px; padding: 0 .8rem;
+  display: inline-flex; align-items: center; gap: .35rem; min-height: 44px; padding: 0 .8rem;
   border-radius: .65rem; border: 1px solid var(--ambre-bord); background: var(--carte);
   font-weight: 700; font-size: .9rem; cursor: pointer; transition: background-color .2s, color .2s, border-color .2s;
 }
