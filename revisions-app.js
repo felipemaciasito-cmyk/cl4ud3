@@ -65,6 +65,7 @@ function render(){
  <div class="rev-fields two"><label>Type<select name="type"><option>Question</option><option>Doute</option><option>Erreur</option></select></label><label>Cours<select name="course" id="course-select"></select></label></div>
  <div class="rev-fields two"><label>Leçon<select name="lesson" id="lesson-select"></select></label><label>Notion concernée<select name="topic" id="topic-select"></select></label></div>
  <label>Ce qui te pose problème<textarea name="description" rows="3" placeholder="Décris ton erreur, ton doute ou ta question avec tes mots…" required></textarea></label>
+ <label class="image-upload">Captures d’écran de ton exercice <input id="entry-images" type="file" accept="image/png,image/jpeg,image/webp" multiple><span class="rev-tiny">Ajoute jusqu’à 3 images pour que le tuteur puisse identifier précisément l’exercice. Elles seront conservées avec cette difficulté sur cet appareil.</span></label><div id="entry-image-preview" class="image-preview"></div>
  <div class="rev-form-foot"><span class="rev-small">Enregistré sur cet appareil.</span><button class="rev-btn primary" type="submit">Ajouter au carnet</button></div>
  </form>
  <div class="rev-section-head list-head"><div><p class="eyebrow">À TRAITER</p><h2>Mes difficultés</h2></div><span id="count-label" class="rev-small"></span></div>
@@ -145,7 +146,7 @@ function render(){
  btn.disabled=true;btn.textContent="Analyse en cours…";
  out.insertAdjacentHTML("beforeend",'<p class="rev-small" id="tutor-pending">Claude analyse ton exercice et prépare une réponse…</p>');
  try{
-  const imageParts=[];
+  const imageParts=(x.images||[]).map(dataUrl=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data:dataUrl.split(",")[1]}}));
   for(const file of files){
    if(!["image/png","image/jpeg","image/webp"].includes(file.type))throw Error("Format non pris en charge : "+file.name);
    if(file.size>12*1024*1024)throw Error("Une image dépasse 12 Mo : "+file.name);
@@ -175,6 +176,14 @@ function render(){
   out.insertAdjacentHTML("beforeend",'<p class="error-text">'+esc(err.message)+'</p>');
  }finally{btn.disabled=false;btn.textContent="Envoyer à Claude";}
 }
+async function imageToStoredDataUrl(file){
+ const source=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error("Impossible de lire l’image."));reader.readAsDataURL(file);});
+ const img=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Image illisible : "+file.name));image.src=source;});
+ const scale=Math.min(1,1600/Math.max(img.width,img.height)),canvas=document.createElement("canvas");
+ canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
+ canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+ return canvas.toDataURL("image/jpeg",0.72);
+}
 async function imageToAnthropicPart(file){
  const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error("Impossible de lire l’image."));reader.readAsDataURL(file);});
  const img=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error("Image illisible : "+file.name));image.src=dataUrl;});
@@ -195,10 +204,29 @@ async function imageToAnthropicPart(file){
  const requestedLesson=Number(new URLSearchParams(location.search).get("lesson"));
  if(requestedCourse&&COURSE_REGISTRY.some(c=>c.id===requestedCourse)){courseSelect.value=requestedCourse;fillLessons();}
  if(requestedLesson&&Array.from(lessonSelect.options).some(o=>Number(o.value)===requestedLesson)){lessonSelect.value=String(requestedLesson);fillTopics();}
- document.getElementById("entry-form").onsubmit=e=>{
- e.preventDefault();const fd=new FormData(e.currentTarget),course=COURSE_REGISTRY.find(c=>c.id===fd.get("course")),lesson=course.lessons.find(l=>l.id===Number(fd.get("lesson")));
- save({id:uid(),type:fd.get("type"),source:"manuel",courseId:course.id,courseTitle:course.title,lessonId:lesson.id,lessonTitle:lesson.titre,topicTitle:fd.get("topic"),description:fd.get("description").trim(),status:"a-comprendre",createdAt:Date.now(),updatedAt:Date.now(),occurrences:1});
- e.currentTarget.reset();fillLessons();refresh();
+ const entryImages=document.getElementById("entry-images");
+ entryImages.addEventListener("change",()=>{
+  const files=Array.from(entryImages.files||[]),preview=document.getElementById("entry-image-preview");
+  preview.innerHTML=files.slice(0,3).map(f=>'<div class="image-preview-item"><span>'+esc(f.name)+'</span><small>'+Math.round(f.size/1024)+' Ko</small></div>').join("");
+  if(files.length>3)preview.insertAdjacentHTML("beforeend",'<p class="error-text">Seules les 3 premières captures seront ajoutées.</p>');
+ });
+ document.getElementById("entry-form").onsubmit=async e=>{
+ e.preventDefault();
+ const form=e.currentTarget,submit=form.querySelector('button[type="submit"]'),fd=new FormData(form);
+ const files=Array.from(entryImages.files||[]).slice(0,3);
+ submit.disabled=true;submit.textContent="Enregistrement…";
+ try{
+  const images=[];
+  for(const file of files){
+   if(!["image/png","image/jpeg","image/webp"].includes(file.type))throw Error("Format non pris en charge : "+file.name);
+   if(file.size>12*1024*1024)throw Error("Une image dépasse 12 Mo : "+file.name);
+   images.push(await imageToStoredDataUrl(file));
+  }
+  const course=COURSE_REGISTRY.find(c=>c.id===fd.get("course")),lesson=course.lessons.find(l=>l.id===Number(fd.get("lesson")));
+  save({id:uid(),type:fd.get("type"),source:"manuel",courseId:course.id,courseTitle:course.title,lessonId:lesson.id,lessonTitle:lesson.titre,topicTitle:fd.get("topic"),description:fd.get("description").trim(),images,status:"a-comprendre",createdAt:Date.now(),updatedAt:Date.now(),occurrences:1});
+  form.reset();document.getElementById("entry-image-preview").innerHTML="";fillLessons();refresh();
+ }catch(err){alert("Impossible d’ajouter cette difficulté : "+err.message);}
+ finally{submit.disabled=false;submit.textContent="Ajouter au carnet";}
  };
  document.getElementById("search").oninput=e=>{search=e.target.value;renderList();};
  document.getElementById("filter").onchange=e=>{filter=e.target.value;renderList();};
