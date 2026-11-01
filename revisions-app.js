@@ -159,8 +159,6 @@ function render(){
   document.getElementById("tutor-pending")?.remove();
   out.insertAdjacentHTML("beforeend",'<div class="tutor-turn"><span class="tutor-role">Claude</span><div class="ai-answer">'+renderTutorAnswer(answer)+'</div></div>');
   question.value="";
-  picker.value="";
-  document.getElementById("image-preview").innerHTML="";
   out.scrollTop=out.scrollHeight;
  }catch(err){
   document.getElementById("tutor-pending")?.remove();
