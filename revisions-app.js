@@ -286,7 +286,7 @@ document.getElementById("save-ai").onclick=async()=>{
   feedback.textContent="Adresse enregistrée, mais le test a échoué : "+(err.name==="AbortError"?"délai de 25 secondes dépassé":err.message)+".";
  }finally{clearTimeout(timeout);button.disabled=false;input.disabled=false;button.textContent="Enregistrer et tester la connexion";}
 };
- document.getElementById("export-data").onclick=()=>{const payload={exportedAt:new Date().toISOString(),version:1,items:readItems()};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="claude-code-101-mon-carnet.json";a.click();URL.revokeObjectURL(url);};
+ document.getElementById("export-data").onclick=()=>{const payload={exportedAt:new Date().toISOString(),version:1,items:readItems()};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="cl4ud3-mon-carnet.json";a.click();URL.revokeObjectURL(url);};
  refresh();
 }
 render();
