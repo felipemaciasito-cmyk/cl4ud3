@@ -61,7 +61,7 @@ function render(){
  </div>
  <aside class="rev-aside">
  <section class="rev-card rev-map"><p class="eyebrow">PARCOURS COMPLET</p><h2>Explorer les cours</h2><p class="rev-small">Choisis une leçon pour afficher ses objectifs et ses notions clés, même si tu n’as pas encore ajouté de difficulté.</p><div id="course-list" class="course-list"></div></section>
- <section class="rev-card ai-card"><p class="eyebrow">TUTEUR PÉDAGOGIQUE</p><h2>Assistant intelligent</h2><p class="rev-small">Il pourra expliquer une notion, construire des exemples et générer des exercices ciblés à partir de tes difficultés.</p><div id="ai-state" class="ai-state"></div><label class="ai-config">Adresse du service IA (facultatif)<input id="ai-endpoint" type="url" placeholder="https://ton-service-ia.example/api/chat"></label><button id="save-ai" class="rev-btn secondary full">Enregistrer l’adresse</button><p class="rev-tiny">La clé secrète ne doit jamais être placée dans cette application publique. Le service IA devra la conserver côté serveur.</p></section>
+ <section class="rev-card ai-card"><p class="eyebrow">TUTEUR PÉDAGOGIQUE</p><h2>Assistant intelligent</h2><p class="rev-small">Il pourra expliquer une notion, construire des exemples et générer des exercices ciblés à partir de tes difficultés.</p><div id="ai-state" class="ai-state"></div><label class="ai-config">Adresse du service IA (facultatif)<input id="ai-endpoint" type="url" placeholder="https://ton-service-ia.example/api/chat"></label><button id="save-ai" type="button" class="rev-btn secondary full">Enregistrer et tester la connexion</button><p id="ai-feedback" class="ai-feedback" role="status" aria-live="polite"></p><p class="rev-tiny">La clé secrète ne doit jamais être placée dans cette application publique. Le service IA devra la conserver côté serveur.</p></section>
  </aside>
  </section>
  <footer class="rev-footer"><span>Tes notes restent dans le stockage local de ce navigateur.</span><button id="export-data" class="rev-btn secondary">Exporter mon carnet (.json)</button></footer>
@@ -78,7 +78,8 @@ function render(){
  ].map(([t,n])=>`<article class="rev-stat"><span>${t}</span><strong>${n}</strong></article>`).join("");
  document.getElementById("count-label").textContent=items.length+" élément"+(items.length>1?"s":"");
  document.getElementById("ai-endpoint").value=ai.endpoint||"";
- document.getElementById("ai-state").innerHTML=ai.endpoint?'<span class="ai-dot ready"></span> Service IA configuré':'<span class="ai-dot"></span> Service IA à connecter';
+ document.getElementById("ai-state").innerHTML=ai.endpoint?(ai.verifiedEndpoint===ai.endpoint&&ai.verifiedAt?'<span class="ai-dot ready"></span> Dernier test Claude réussi':'<span class="ai-dot"></span> Adresse enregistrée — connexion non vérifiée'):'<span class="ai-dot"></span> Service IA à connecter';
+ document.getElementById("ai-feedback").textContent=ai.endpoint?(ai.verifiedEndpoint===ai.endpoint&&ai.verifiedAt?"Claude a répondu au test du "+new Date(ai.verifiedAt).toLocaleString("fr-FR")+".":"Appuie sur le bouton pour tester réellement Claude."):"";
  renderList();renderCourses();
  }
  function renderList(){
@@ -144,7 +145,42 @@ function render(){
  };
  document.getElementById("search").oninput=e=>{search=e.target.value;renderList();};
  document.getElementById("filter").onchange=e=>{filter=e.target.value;renderList();};
- document.getElementById("save-ai").onclick=()=>{const endpoint=document.getElementById("ai-endpoint").value.trim();writeAI({endpoint});refresh();};
+ document.getElementById("ai-endpoint").addEventListener("input",()=>{
+ const state=document.getElementById("ai-state"),feedback=document.getElementById("ai-feedback");
+ state.innerHTML='<span class="ai-dot"></span> Adresse modifiée — test nécessaire';
+ feedback.textContent="L’adresse modifiée n’a pas encore été vérifiée.";
+ feedback.className="ai-feedback";
+});
+document.getElementById("save-ai").onclick=async()=>{
+ const input=document.getElementById("ai-endpoint"),button=document.getElementById("save-ai"),feedback=document.getElementById("ai-feedback"),state=document.getElementById("ai-state");
+ const endpoint=input.value.trim();
+ if(!endpoint){writeAI({});ai={};refresh();feedback.textContent="Adresse supprimée.";return;}
+ let url;
+ try{url=new URL(endpoint);if(url.protocol!=="https:")throw Error("HTTPS requis");}
+ catch{feedback.textContent="Saisis une adresse HTTPS valide.";feedback.className="ai-feedback error";return;}
+ const previous=readAI();
+ ai={endpoint,verifiedAt:previous.verifiedEndpoint===endpoint?previous.verifiedAt:null,verifiedEndpoint:previous.verifiedEndpoint===endpoint?endpoint:null};
+ writeAI(ai);
+ button.disabled=true;input.disabled=true;button.textContent="Test de Claude en cours…";
+ state.innerHTML='<span class="ai-dot testing"></span> Connexion en cours de vérification';
+ feedback.className="ai-feedback";feedback.textContent="Adresse enregistrée. Envoi d’une demande réelle à Claude…";
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);
+ try{
+  const res=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:[{role:"user",content:"Réponds uniquement avec le mot OK."}]}),signal:controller.signal});
+  let data;try{data=await res.json();}catch{throw Error("Réponse du serveur illisible");}
+  if(!res.ok)throw Error(data.error||data.message||"Erreur HTTP "+res.status);
+  const answer=data.choices?.[0]?.message?.content||data.answer||data.content;
+  if(typeof answer!=="string"||!answer.trim())throw Error("Claude n’a pas renvoyé de réponse valide");
+  ai={endpoint,verifiedEndpoint:endpoint,verifiedAt:Date.now()};writeAI(ai);
+  state.innerHTML='<span class="ai-dot ready"></span> Connexion à Claude vérifiée';
+  feedback.className="ai-feedback success";feedback.textContent="Connexion réussie : Claude a répondu au test. L’adresse est enregistrée.";
+ }catch(err){
+  ai={endpoint};writeAI(ai);
+  state.innerHTML='<span class="ai-dot failed"></span> Connexion à Claude non vérifiée';
+  feedback.className="ai-feedback error";
+  feedback.textContent="Adresse enregistrée, mais le test a échoué : "+(err.name==="AbortError"?"délai de 25 secondes dépassé":err.message)+".";
+ }finally{clearTimeout(timeout);button.disabled=false;input.disabled=false;button.textContent="Enregistrer et tester la connexion";}
+};
  document.getElementById("export-data").onclick=()=>{const payload={exportedAt:new Date().toISOString(),version:1,items:readItems()};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="claude-code-101-mon-carnet.json";a.click();URL.revokeObjectURL(url);};
  refresh();
 }
