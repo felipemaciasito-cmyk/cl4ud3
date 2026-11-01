@@ -33,3 +33,17 @@
 .ai-answer code{font-family:var(--mono);font-size:.88em;background:var(--fond);padding:.1rem .25rem;border-radius:.25rem;overflow-wrap:anywhere}
 .tutor-code{max-width:100%;overflow-x:auto;white-space:pre;padding:.8rem;background:var(--fond);border:1px solid var(--bord);border-radius:.6rem;font-size:.82rem;line-height:1.5;-webkit-overflow-scrolling:touch}
 @media(max-width:520px){.rev-modal{align-items:flex-start;padding:.5rem}.rev-dialog{max-height:calc(100vh - 1rem);max-height:calc(100dvh - 1rem);width:100%;border-radius:1rem;padding:1rem}.tutor-output{padding:.85rem}.ai-answer{font-size:.92rem;line-height:1.6}}
+
+/* Import de captures et conversation pédagogique */
+.image-upload{display:grid;gap:.45rem;margin:.9rem 0;font-size:.9rem;font-weight:700}
+.image-upload input{width:100%;font:inherit;font-size:.88rem;padding:.7rem;border:1px dashed var(--bord);border-radius:.65rem;background:var(--fond);color:var(--encre)}
+.image-preview{display:grid;gap:.4rem;margin:.5rem 0}
+.image-preview-item{display:flex;justify-content:space-between;gap:.8rem;padding:.5rem .7rem;border:1px solid var(--bord);border-radius:.5rem;background:var(--fond);font-size:.8rem;overflow-wrap:anywhere}
+.image-preview-item small{color:var(--discret);white-space:nowrap}
+.tutor-question-label{display:grid;gap:.4rem;margin-top:.8rem;font-size:.88rem;font-weight:700}
+.tutor-question-label textarea{width:100%;min-height:88px;resize:vertical;border:1px solid var(--bord);border-radius:.65rem;padding:.7rem;background:var(--fond);color:var(--encre);font:inherit;font-size:.92rem}
+.tutor-conversation{display:grid;gap:.8rem;max-height:none;overflow:visible}
+.tutor-turn{padding:.8rem;background:var(--fond);border:1px solid var(--bord);border-radius:.7rem;min-width:0}
+.tutor-role{display:block;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--discret);margin-bottom:.45rem}
+.tutor-turn .ai-answer{white-space:normal}
+@media(max-width:520px){.image-preview-item{font-size:.75rem}.tutor-turn{padding:.7rem}}
