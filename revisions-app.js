@@ -138,6 +138,7 @@ function render(){
  async function askAI(x){
  const out=document.getElementById("tutor-content"),btn=document.getElementById("ask-ai");
  const question=document.getElementById("tutor-question");
+ let history=x.tutorHistory||(window.__cc101TutorHistory||(window.__cc101TutorHistory=[]));
  if(!ai.endpoint||btn.disabled)return;
  const files=[];
  if(!question.value.trim()&&!(x.images||[]).length){out.insertAdjacentHTML("beforeend",'<p class="error-text">Cette difficulté ne contient aucune capture. Ajoute une image dans « Ajouter une difficulté » ou écris une question.</p>');return;}
@@ -146,7 +147,6 @@ function render(){
  try{
   const imageParts=(x.images||[]).map(dataUrl=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data:dataUrl.split(",")[1]}}));
   const userText=question.value.trim()||(imageParts.length?"Analyse immédiatement toutes les captures jointes. Commence par identifier et présenter les différents sujets, notions, concepts, commandes ou langages qui semblent concernés. Distingue les pistes certaines des pistes possibles et explique brièvement les indices visibles. Recommande le sujet prioritaire à travailler. Si un élément indispensable reste incertain, pose-moi une question ciblée. Ne donne pas encore une longue leçon : cette première réponse sert à cadrer les sujets.":"Aide-moi à comprendre cette difficulté.");
-  const history=x.tutorHistory||(window.__cc101TutorHistory||(window.__cc101TutorHistory=[]));
   const content=[...imageParts,{type:"text",text:userText}];
   if(!history.length){
    content.unshift({type:"text",text:"Tu es un tuteur pédagogique expert en programmation et Claude Code. Aide un apprenant débutant francophone. Lors de la première analyse d’une capture, identifie et liste les différents sujets, notions, concepts, commandes et langages potentiellement concernés. Explique brièvement les indices visibles, distingue certitudes et hypothèses, puis recommande le sujet prioritaire. Pose une question ciblée seulement si nécessaire. Ensuite, attends les précisions de l’apprenant et accompagne-le progressivement. Ne devine jamais le contenu illisible."});
