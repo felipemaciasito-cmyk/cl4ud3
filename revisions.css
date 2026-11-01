@@ -13,3 +13,12 @@
 .rev-modal{position:fixed;inset:0;z-index:80;background:rgba(5,10,18,.65);display:grid;place-items:center;padding:1rem;overflow:auto}.rev-modal[hidden]{display:none}.rev-dialog{position:relative;width:min(100%,42rem);max-height:min(90vh,55rem);overflow:auto;background:var(--fond);color:var(--encre);border:1px solid var(--bord);border-radius:1.2rem;padding:1.5rem;box-shadow:0 20px 80px rgba(0,0,0,.35)}.modal-close{position:absolute;right:1rem;top:1rem;border:0;background:transparent;font-size:1.8rem;cursor:pointer;color:var(--discret)}.rev-dialog h2{font-size:1.7rem;margin:.5rem 2rem 1rem 0}.detail-question{white-space:pre-wrap;background:var(--carte);border:1px solid var(--bord);padding:1rem;border-radius:.8rem;margin:1rem 0}.tutor-output{margin-top:1.4rem;padding:1rem;background:var(--carte);border:1px solid var(--bord);border-radius:.8rem}.tutor-output #tutor-content{font-size:.94rem;line-height:1.65;margin:.7rem 0;overflow-wrap:anywhere}.ai-answer{white-space:pre-wrap}.error-text{color:var(--erreur)}.detail-actions{display:flex;justify-content:space-between;gap:.7rem;margin-top:1rem}.rev-loading{padding:2rem;text-align:center;color:var(--discret)}
 @media(max-width:760px){.rev-layout{grid-template-columns:1fr}.rev-aside{grid-template-columns:1fr 1fr}.rev-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.rev-footer{align-items:flex-start;flex-direction:column}.rev-main{padding:1.7rem 1rem 4rem}.rev-top{padding:.8rem 1rem}.rev-top-label{font-size:.61rem}.rev-aside{grid-template-columns:1fr}.rev-fields,.rev-tools{grid-template-columns:1fr}.rev-form-foot{align-items:stretch;flex-direction:column}.rev-form-foot .rev-btn{width:100%}.rev-item{align-items:flex-start}.rev-open{padding:.3rem}.rev-dialog{padding:1.2rem}.rev-section-head{align-items:start;flex-direction:column;gap:.2rem}}
+
+/* Retour immédiat et explicite du test de connexion Claude */
+.ai-feedback{font-size:.8rem;line-height:1.5;margin:.65rem 0 0;color:var(--discret);overflow-wrap:anywhere}
+.ai-feedback.success{color:var(--succes)}.ai-feedback.error{color:var(--erreur)}
+.ai-dot{flex:none}.ai-dot.failed{background:var(--erreur)}.ai-dot.testing{background:var(--ambre);animation:ai-pulse 1s ease-in-out infinite alternate}
+@keyframes ai-pulse{from{opacity:.35;transform:scale(.8)}to{opacity:1;transform:scale(1.2)}}
+#save-ai{transition:background-color .15s,transform .15s,opacity .15s}
+#save-ai:active:not(:disabled){transform:scale(.985)}
+#save-ai:focus-visible{outline:3px solid var(--ambre);outline-offset:3px}
