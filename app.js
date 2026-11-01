@@ -1,42 +1,85 @@
 import { React, createRoot } from "./vendor-react.js";
-import { SECTIONS, LECONS, CLASSER, PHASES, QUIZ, LEXIQUE } from "./donnees.js";
+import { COURS } from "./cours.js";
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
-const TOTAL = LECONS.length;
+const PREMIER = COURS[0];
+const PLUSIEURS = COURS.length > 1;
+const TOTAL_LECONS = COURS.reduce((n, c) => n + c.LECONS.length, 0);
+const DERNIER_QUIZ = [...COURS].reverse().find((c) => c.QUIZ.length) || PREMIER;
+const LEXIQUE = (() => {
+  const vus = /* @__PURE__ */ new Set();
+  return COURS.flatMap((c) => c.LEXIQUE || []).filter(([m]) => !vus.has(m) && vus.add(m)).sort((a, b) => a[0].localeCompare(b[0], "fr"));
+})();
+function lien(c, page) {
+  return "#" + (c.id === PREMIER.id ? "" : c.id + "/") + page;
+}
 const CLE = "cc101fr:v1";
 function lireEtat() {
   try {
     const o = JSON.parse(localStorage.getItem(CLE) || "null");
     if (o && Array.isArray(o.faites)) {
-      return { faites: o.faites, quiz: o.quiz || null, theme: o.theme || "auto" };
+      return { faites: o.faites, quiz: o.quiz || null, cours: o.cours || {}, theme: o.theme || "auto" };
     }
   } catch (e) {
   }
-  return { faites: [], quiz: null, theme: "auto" };
+  return { faites: [], quiz: null, cours: {}, theme: "auto" };
 }
-function enregistrerErreurQuiz(q, choisi) {
+function progression(etat, c) {
+  if (c.id === PREMIER.id) return { faites: etat.faites, quiz: etat.quiz };
+  const p = (etat.cours || {})[c.id] || {};
+  return { faites: p.faites || [], quiz: p.quiz || null };
+}
+function avecProgression(etat, c, f) {
+  const p = f(progression(etat, c));
+  if (c.id === PREMIER.id) return { ...etat, faites: p.faites, quiz: p.quiz };
+  return { ...etat, cours: { ...etat.cours || {}, [c.id]: p } };
+}
+function nbFaites(etat, c) {
+  const p = progression(etat, c);
+  return c.LECONS.filter((l) => p.faites.includes(l.id)).length;
+}
+function prochaineEtape(etat) {
+  for (const c of COURS) {
+    const p = progression(etat, c);
+    const l = c.LECONS.find((x) => !p.faites.includes(x.id));
+    if (l) return { cours: c, lecon: l };
+    if (!p.quiz && c.QUIZ.length) return { cours: c, quiz: true };
+  }
+  return null;
+}
+function enregistrerErreurQuiz(c, q, choisi) {
   try {
     const cle = "cc101fr:revisions:v1";
     const items = JSON.parse(localStorage.getItem(cle) || "[]");
-    const lecon = LECONS.find((l) => l.id === q.l) || LECONS[0];
-    const existant = items.find((x) => x.source === "quiz" && x.question === q.q && x.status !== "maitrise");
-    if (existant) { existant.occurrences = (existant.occurrences || 1) + 1; existant.updatedAt = Date.now(); localStorage.setItem(cle, JSON.stringify(items)); return; }
-    items.unshift({ id: "quiz-" + Date.now() + "-" + q.l, type: "Erreur", source: "quiz", courseId: "claude-code-101", courseTitle: "Claude Code 101", lessonId: lecon.id, lessonTitle: lecon.titre, topicTitle: lecon.objectifs[0] || lecon.titre, description: "Question : " + q.q + "\nRéponse donnée : " + q.o[choisi] + "\nRéponse attendue : " + q.o[q.b] + "\nExplication : " + q.e, question: q.q, wrongAnswer: q.o[choisi], correctAnswer: q.o[q.b], explanation: q.e, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
+    const lecon = c.LECONS.find((l) => l.id === q.l) || c.LECONS[0];
+    const existant = items.find((x) => x.source === "quiz" && (x.courseId || PREMIER.id) === c.id && x.question === q.q && x.status !== "maitrise");
+    if (existant) {
+      existant.occurrences = (existant.occurrences || 1) + 1;
+      existant.updatedAt = Date.now();
+      localStorage.setItem(cle, JSON.stringify(items));
+      return;
+    }
+    items.unshift({ id: "quiz-" + Date.now() + "-" + q.l, type: "Erreur", source: "quiz", courseId: c.id, courseTitle: c.titre, lessonId: lecon.id, lessonTitle: lecon.titre, topicTitle: lecon.objectifs[0] || lecon.titre, description: "Question : " + q.q + "\nRéponse donnée : " + q.o[choisi] + "\nRéponse attendue : " + q.o[q.b] + "\nExplication : " + q.e, question: q.q, wrongAnswer: q.o[choisi], correctAnswer: q.o[q.b], explanation: q.e, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
     localStorage.setItem(cle, JSON.stringify(items));
-  } catch (e) {}
+  } catch (e) {
+  }
 }
-
-function enregistrerErreurExercice(lessonId, question, choix, bonneReponse) {
+function enregistrerErreurExercice(c, lessonId, question, choix, bonneReponse) {
   try {
     const cle = "cc101fr:revisions:v1";
     const items = JSON.parse(localStorage.getItem(cle) || "[]");
-    const lecon = LECONS.find((l) => l.id === lessonId) || LECONS[0];
-    const existant = items.find((x) => x.source === "exercice" && x.lessonId === lessonId && x.question === question && x.status !== "maitrise");
-    if (existant) { existant.occurrences = (existant.occurrences || 1) + 1; existant.updatedAt = Date.now(); localStorage.setItem(cle, JSON.stringify(items)); return; }
-    items.unshift({ id: "ex-" + Date.now() + "-" + lessonId, type: "Erreur", source: "exercice", courseId: "claude-code-101", courseTitle: "Claude Code 101", lessonId, lessonTitle: lecon.titre, topicTitle: question, description: "Question : " + question + "\nRéponse donnée : " + choix + "\nRéponse attendue : " + bonneReponse, question, wrongAnswer: choix, correctAnswer: bonneReponse, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
+    const lecon = c.LECONS.find((l) => l.id === lessonId) || c.LECONS[0];
+    const existant = items.find((x) => x.source === "exercice" && (x.courseId || PREMIER.id) === c.id && x.lessonId === lessonId && x.question === question && x.status !== "maitrise");
+    if (existant) {
+      existant.occurrences = (existant.occurrences || 1) + 1;
+      existant.updatedAt = Date.now();
+      localStorage.setItem(cle, JSON.stringify(items));
+      return;
+    }
+    items.unshift({ id: "ex-" + Date.now() + "-" + lessonId, type: "Erreur", source: "exercice", courseId: c.id, courseTitle: c.titre, lessonId, lessonTitle: lecon.titre, topicTitle: question, description: "Question : " + question + "\nRéponse donnée : " + choix + "\nRéponse attendue : " + bonneReponse, question, wrongAnswer: choix, correctAnswer: bonneReponse, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
     localStorage.setItem(cle, JSON.stringify(items));
-  } catch (e) {}
+  } catch (e) {
+  }
 }
-
 function useEtat() {
   const [etat, setEtat] = useState(lireEtat);
   useEffect(() => {
@@ -49,10 +92,11 @@ function useEtat() {
 }
 function lireRoute() {
   const h = location.hash.replace(/^#/, "");
-  if (h === "quiz") return { vue: "quiz" };
   if (h === "lexique") return { vue: "lexique" };
-  const m = /^lecon-(\d{1,2})$/.exec(h);
-  if (m && +m[1] >= 1 && +m[1] <= TOTAL) return { vue: "lecon", id: +m[1] };
+  const m = /^(?:([a-z0-9-]+)\/)?(quiz|lecon-(\d{1,3}))$/.exec(h);
+  const c = m && (m[1] ? COURS.find((x) => x.id === m[1]) : PREMIER);
+  if (c && m[2] === "quiz" && c.QUIZ.length) return { vue: "quiz", cours: c };
+  if (c && m[3] && +m[3] >= 1 && +m[3] <= c.LECONS.length) return { vue: "lecon", cours: c, id: +m[3] };
   return { vue: "accueil" };
 }
 function useRoute() {
@@ -204,7 +248,10 @@ function Barre({ etat, setEtat, route }) {
   const theme = etat.theme;
   const suivant = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
   const Ic = theme === "clair" ? IcSoleil : theme === "sombre" ? IcLune : IcAuto;
-  return /* @__PURE__ */ React.createElement("header", { className: "barre" }, /* @__PURE__ */ React.createElement("div", { className: "barre-int" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "marque" }, /* @__PURE__ */ React.createElement("span", { className: "marque-logo", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null)), /* @__PURE__ */ React.createElement("span", { className: "marque-nom" }, "Claude Code 101 ", /* @__PURE__ */ React.createElement("span", null, "en français"))), /* @__PURE__ */ React.createElement("nav", { className: "barre-nav", "aria-label": "Navigation principale" }, /* @__PURE__ */ React.createElement("a", { href: "#lexique", "aria-current": route.vue === "lexique" ? "page" : void 0 }, /* @__PURE__ */ React.createElement(IcLivre, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Lexique")), /* @__PURE__ */ React.createElement("a", { href: "#quiz", "aria-current": route.vue === "quiz" ? "page" : void 0 }, /* @__PURE__ */ React.createElement(IcDrapeau, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Quiz")), /* @__PURE__ */ React.createElement("a", { href: "revisions.html" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Révisions"))), /* @__PURE__ */ React.createElement(
+  const etape = prochaineEtape(etat);
+  const coursQuiz = [route.cours, etape && etape.cours].find((c) => c && c.QUIZ.length) || DERNIER_QUIZ;
+  const faites = COURS.reduce((n, c) => n + nbFaites(etat, c), 0);
+  return /* @__PURE__ */ React.createElement("header", { className: "barre" }, /* @__PURE__ */ React.createElement("div", { className: "barre-int" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "marque" }, /* @__PURE__ */ React.createElement("span", { className: "marque-logo", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null)), /* @__PURE__ */ React.createElement("span", { className: "marque-nom" }, "CL4UD3")), /* @__PURE__ */ React.createElement("nav", { className: "barre-nav", "aria-label": "Navigation principale" }, /* @__PURE__ */ React.createElement("a", { href: "#lexique", "aria-current": route.vue === "lexique" ? "page" : void 0 }, /* @__PURE__ */ React.createElement(IcLivre, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Lexique")), /* @__PURE__ */ React.createElement("a", { href: lien(coursQuiz, "quiz"), "aria-current": route.vue === "quiz" ? "page" : void 0 }, /* @__PURE__ */ React.createElement(IcDrapeau, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Quiz")), /* @__PURE__ */ React.createElement("a", { href: "revisions.html" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Révisions"))), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -213,39 +260,50 @@ function Barre({ etat, setEtat, route }) {
       "aria-label": `Thème ${NOM_THEME[theme]}. Passer au thème ${NOM_THEME[suivant]}`
     },
     /* @__PURE__ */ React.createElement(Ic, { taille: 19 })
-  ), /* @__PURE__ */ React.createElement(Anneau, { valeur: etat.faites.length, total: TOTAL })));
+  ), /* @__PURE__ */ React.createElement(Anneau, { valeur: faites, total: TOTAL_LECONS })));
 }
-function Etape({ lecon, statut }) {
-  return /* @__PURE__ */ React.createElement("li", { className: "etape", "data-statut": statut }, /* @__PURE__ */ React.createElement("a", { href: `#lecon-${lecon.id}`, className: "etape-lien" }, /* @__PURE__ */ React.createElement("span", { className: "etape-indicateur" }, statut === "fait" ? /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" }) : lecon.id), /* @__PURE__ */ React.createElement("span", { className: "etape-texte" }, /* @__PURE__ */ React.createElement("span", { className: "etape-titre" }, lecon.titre), /* @__PURE__ */ React.createElement("span", { className: "etape-desc" }, lecon.resume)), /* @__PURE__ */ React.createElement("span", { className: "etape-duree" }, lecon.duree, " min")));
+function Etape({ c, lecon, statut }) {
+  return /* @__PURE__ */ React.createElement("li", { className: "etape", "data-statut": statut }, /* @__PURE__ */ React.createElement("a", { href: lien(c, `lecon-${lecon.id}`), className: "etape-lien" }, /* @__PURE__ */ React.createElement("span", { className: "etape-indicateur" }, statut === "fait" ? /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" }) : lecon.id), /* @__PURE__ */ React.createElement("span", { className: "etape-texte" }, /* @__PURE__ */ React.createElement("span", { className: "etape-titre" }, lecon.titre), /* @__PURE__ */ React.createElement("span", { className: "etape-desc" }, lecon.resume)), /* @__PURE__ */ React.createElement("span", { className: "etape-duree" }, lecon.duree, " min")));
 }
-function Accueil({ etat, setEtat, toast }) {
-  const n = etat.faites.length;
-  const prochaine = LECONS.find((l) => !etat.faites.includes(l.id));
-  const pct = Math.round(n / TOTAL * 100);
-  const cta = !prochaine ? { href: "#quiz", t: "Passer le quiz final" } : n === 0 ? { href: "#lecon-1", t: "Commencer le parcours" } : { href: `#lecon-${prochaine.id}`, t: `Reprendre : leçon ${prochaine.id}` };
-  const effacer = () => {
-    if (window.confirm("Effacer ta progression et ton score sur cet appareil ?")) {
-      setEtat((e) => ({ ...e, faites: [], quiz: null }));
-      toast("Progression effacée");
-    }
-  };
-  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement("section", { className: "hero" }, /* @__PURE__ */ React.createElement("h1", null, "Claude Code 101, en français"), /* @__PURE__ */ React.createElement("p", { className: "chapo" }, "Le parcours du cours d’Anthropic Academy, réécrit en français et pensé pour l’iPad. Douze leçons, des exercices sur claude.ai/code et un quiz final."), /* @__PURE__ */ React.createElement("div", { className: "progression" }, /* @__PURE__ */ React.createElement("div", { className: "progression-ligne" }, /* @__PURE__ */ React.createElement("span", null, n === 0 ? "Pas encore commencé" : n === TOTAL ? "Parcours terminé" : `Leçon ${prochaine.id} sur ${TOTAL} à suivre`), /* @__PURE__ */ React.createElement("strong", null, pct, " %")), /* @__PURE__ */ React.createElement(Jauge, { valeur: n, total: TOTAL, etiquette: "Progression dans le parcours" }), /* @__PURE__ */ React.createElement("div", { className: "progression-ligne discret" }, /* @__PURE__ */ React.createElement("span", null, n, " ", n > 1 ? "leçons terminées" : "leçon terminée"), /* @__PURE__ */ React.createElement("span", null, etat.quiz ? `Meilleur score au quiz : ${etat.quiz.meilleur}/${QUIZ.length}` : "Quiz pas encore passé"))), /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-principal bouton-grand", href: cta.href }, cta.t, /* @__PURE__ */ React.createElement(IcDroite, { taille: 20 }))), /* @__PURE__ */ React.createElement("section", { className: "carte besoin" }, /* @__PURE__ */ React.createElement("h2", null, "Ce qu’il te faut"), /* @__PURE__ */ React.createElement("ul", null, /* @__PURE__ */ React.createElement("li", null, "Ton abonnement Claude Pro."), /* @__PURE__ */ React.createElement("li", null, "Un compte GitHub, gratuit."), /* @__PURE__ */ React.createElement("li", null, "Safari, ou l’onglet Code de l’appli Claude."))), /* @__PURE__ */ React.createElement("nav", { className: "parcours", "aria-label": "Les leçons du parcours" }, SECTIONS.map((s, si) => /* @__PURE__ */ React.createElement("section", { key: si, className: "parcours-section" }, /* @__PURE__ */ React.createElement("h2", null, s), /* @__PURE__ */ React.createElement("ol", { className: "etapes" }, LECONS.filter((l) => l.section === si).map((l) => /* @__PURE__ */ React.createElement(
+function ParcoursCours({ c, numero, etat, etape }) {
+  const p = progression(etat, c);
+  const Titre = PLUSIEURS ? "h3" : "h2";
+  const ici = etape && etape.cours === c ? etape : null;
+  const sections = /* @__PURE__ */ React.createElement(React.Fragment, null, c.SECTIONS.map((s, si) => /* @__PURE__ */ React.createElement("section", { key: si, className: "parcours-section" }, /* @__PURE__ */ React.createElement(Titre, null, s), /* @__PURE__ */ React.createElement("ol", { className: "etapes" }, c.LECONS.filter((l) => l.section === si).map((l) => /* @__PURE__ */ React.createElement(
     Etape,
     {
       key: l.id,
+      c,
       lecon: l,
-      statut: etat.faites.includes(l.id) ? "fait" : prochaine && prochaine.id === l.id ? "actif" : "a-venir"
+      statut: p.faites.includes(l.id) ? "fait" : ici && ici.lecon === l ? "actif" : "a-venir"
     }
-  ))))), /* @__PURE__ */ React.createElement("section", { className: "parcours-section" }, /* @__PURE__ */ React.createElement("h2", null, "Pour finir"), /* @__PURE__ */ React.createElement("ol", { className: "etapes" }, /* @__PURE__ */ React.createElement("li", { className: "etape etape-terminus", "data-statut": etat.quiz ? "fait" : !prochaine ? "actif" : "a-venir" }, /* @__PURE__ */ React.createElement("a", { href: "#quiz", className: "etape-lien" }, /* @__PURE__ */ React.createElement("span", { className: "etape-indicateur" }, etat.quiz ? /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" }) : /* @__PURE__ */ React.createElement(IcDrapeau, { taille: 18 })), /* @__PURE__ */ React.createElement("span", { className: "etape-texte" }, /* @__PURE__ */ React.createElement("span", { className: "etape-titre" }, "Quiz final"), /* @__PURE__ */ React.createElement("span", { className: "etape-desc" }, QUIZ.length, " questions sur tout le parcours, une à la fois."))))))), /* @__PURE__ */ React.createElement("section", { className: "apropos" }, /* @__PURE__ */ React.createElement("h2", null, "À propos de ce parcours"), /* @__PURE__ */ React.createElement("p", null, "Parcours non officiel, rédigé par Claude à partir du programme public de Claude Code 101 (Anthropic Academy) et de la documentation officielle de Claude Code en français. Il suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad."), /* @__PURE__ */ React.createElement("p", null, "Ta progression est enregistrée sur cet appareil."), /* @__PURE__ */ React.createElement("ul", null, /* @__PURE__ */ React.createElement("li", null, "Pour le certificat officiel, il faut passer le quiz du cours, en anglais, sur ", /* @__PURE__ */ React.createElement("a", { href: "https://anthropic.skilljar.com/claude-code-101", target: "_blank", rel: "noopener" }, "anthropic.skilljar.com"), "."), /* @__PURE__ */ React.createElement("li", null, "La documentation officielle en français : ", /* @__PURE__ */ React.createElement("a", { href: "https://code.claude.com/docs/fr/overview", target: "_blank", rel: "noopener" }, "code.claude.com/docs/fr"), "."), /* @__PURE__ */ React.createElement("li", null, "Bloqué sur une étape ? Copie le titre de la leçon et pose ta question à Claude.")), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-contour", onClick: effacer }, /* @__PURE__ */ React.createElement(IcRelancer, { taille: 18 }), "Effacer ma progression")));
+  ))))), c.QUIZ.length > 0 && /* @__PURE__ */ React.createElement("section", { className: "parcours-section" }, /* @__PURE__ */ React.createElement(Titre, null, "Pour finir"), /* @__PURE__ */ React.createElement("ol", { className: "etapes" }, /* @__PURE__ */ React.createElement("li", { className: "etape etape-terminus", "data-statut": p.quiz ? "fait" : ici && ici.quiz ? "actif" : "a-venir" }, /* @__PURE__ */ React.createElement("a", { href: lien(c, "quiz"), className: "etape-lien" }, /* @__PURE__ */ React.createElement("span", { className: "etape-indicateur" }, p.quiz ? /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" }) : /* @__PURE__ */ React.createElement(IcDrapeau, { taille: 18 })), /* @__PURE__ */ React.createElement("span", { className: "etape-texte" }, /* @__PURE__ */ React.createElement("span", { className: "etape-titre" }, "Quiz final"), /* @__PURE__ */ React.createElement("span", { className: "etape-desc" }, c.QUIZ.length, " questions sur tout le ", PLUSIEURS ? "cours" : "parcours", ", une à la fois.")))))));
+  if (!PLUSIEURS) return sections;
+  return /* @__PURE__ */ React.createElement("section", { className: "parcours-cours", "aria-labelledby": `cours-${c.id}` }, /* @__PURE__ */ React.createElement("div", { className: "cours-entete" }, /* @__PURE__ */ React.createElement("span", { className: "cours-numero" }, "Cours ", numero), /* @__PURE__ */ React.createElement("h2", { id: `cours-${c.id}` }, c.titre), /* @__PURE__ */ React.createElement("span", { className: "cours-avance" }, nbFaites(etat, c), " sur ", c.LECONS.length, " leçons")), sections);
 }
-function Pastilles({ id, faites }) {
-  return /* @__PURE__ */ React.createElement("nav", { className: "pastilles", "aria-label": "Aller à une leçon" }, LECONS.map((l) => {
+function Accueil({ etat, setEtat, toast }) {
+  const n = COURS.reduce((s, c) => s + nbFaites(etat, c), 0);
+  const etape = prochaineEtape(etat);
+  const pct = Math.round(n / TOTAL_LECONS * 100);
+  const cta = !etape ? { href: lien(DERNIER_QUIZ, "quiz"), t: "Passer le quiz final" } : n === 0 ? { href: lien(PREMIER, "lecon-1"), t: "Commencer le parcours" } : etape.quiz ? { href: lien(etape.cours, "quiz"), t: PLUSIEURS ? `Passer le quiz : ${etape.cours.titre}` : "Passer le quiz final" } : { href: lien(etape.cours, `lecon-${etape.lecon.id}`), t: PLUSIEURS ? `Reprendre : ${etape.cours.titre}, leçon ${etape.lecon.id}` : `Reprendre : leçon ${etape.lecon.id}` };
+  const ou = n === 0 ? "Pas encore commencé" : n === TOTAL_LECONS || !etape ? "Parcours terminé" : etape.quiz ? `${etape.cours.titre} : quiz final à passer` : PLUSIEURS ? `${etape.cours.titre} : leçon ${etape.lecon.id} sur ${etape.cours.LECONS.length} à suivre` : `Leçon ${etape.lecon.id} sur ${TOTAL_LECONS} à suivre`;
+  const quiz = PLUSIEURS ? `Quiz réussis : ${COURS.filter((c) => progression(etat, c).quiz).length} sur ${COURS.filter((c) => c.QUIZ.length).length}` : etat.quiz ? `Meilleur score au quiz : ${etat.quiz.meilleur}/${PREMIER.QUIZ.length}` : "Quiz pas encore passé";
+  const effacer = () => {
+    if (window.confirm("Effacer ta progression et ton score sur cet appareil ?")) {
+      setEtat((e) => ({ ...e, faites: [], quiz: null, cours: {} }));
+      toast("Progression effacée");
+    }
+  };
+  return /* @__PURE__ */ React.createElement("div", { className: "page" }, /* @__PURE__ */ React.createElement("section", { className: "hero" }, /* @__PURE__ */ React.createElement("h1", null, "CL4UD3"), /* @__PURE__ */ React.createElement("p", { className: "chapo" }, PLUSIEURS ? `Des cours officiels, réécrits en français et pensés pour l’iPad, à suivre dans l’ordre. Au programme : ${COURS.length} cours, ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final par cours.` : `Le cours Claude Code 101 d’Anthropic Academy, réécrit en français et pensé pour l’iPad. Au programme : ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final.`), /* @__PURE__ */ React.createElement("div", { className: "progression" }, /* @__PURE__ */ React.createElement("div", { className: "progression-ligne" }, /* @__PURE__ */ React.createElement("span", null, ou), /* @__PURE__ */ React.createElement("strong", null, pct, " %")), /* @__PURE__ */ React.createElement(Jauge, { valeur: n, total: TOTAL_LECONS, etiquette: "Progression dans le parcours" }), /* @__PURE__ */ React.createElement("div", { className: "progression-ligne discret" }, /* @__PURE__ */ React.createElement("span", null, n, " ", n > 1 ? "leçons terminées" : "leçon terminée"), /* @__PURE__ */ React.createElement("span", null, quiz))), /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-principal bouton-grand", href: cta.href }, cta.t, /* @__PURE__ */ React.createElement(IcDroite, { taille: 20 }))), /* @__PURE__ */ React.createElement("section", { className: "carte besoin" }, /* @__PURE__ */ React.createElement("h2", null, "Ce qu’il te faut"), /* @__PURE__ */ React.createElement("ul", null, /* @__PURE__ */ React.createElement("li", null, "Ton abonnement Claude Pro."), /* @__PURE__ */ React.createElement("li", null, "Un compte GitHub, gratuit."), /* @__PURE__ */ React.createElement("li", null, "Safari, ou l’onglet Code de l’appli Claude."))), /* @__PURE__ */ React.createElement("nav", { className: "parcours", "aria-label": "Les leçons du parcours" }, COURS.map((c, ci) => /* @__PURE__ */ React.createElement(ParcoursCours, { key: c.id, c, numero: ci + 1, etat, etape }))), /* @__PURE__ */ React.createElement("section", { className: "apropos" }, /* @__PURE__ */ React.createElement("h2", null, "À propos de ce parcours"), PLUSIEURS ? /* @__PURE__ */ React.createElement("p", null, "Parcours non officiel, rédigé par Claude à partir des programmes publics des cours d’origine et de la documentation officielle de Claude Code en français. Chaque cours suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad.") : /* @__PURE__ */ React.createElement("p", null, "Parcours non officiel, rédigé par Claude à partir du programme public de Claude Code 101 (Anthropic Academy) et de la documentation officielle de Claude Code en français. Il suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad."), /* @__PURE__ */ React.createElement("p", null, "Ta progression est enregistrée sur cet appareil."), /* @__PURE__ */ React.createElement("ul", null, PLUSIEURS ? /* @__PURE__ */ React.createElement("li", null, "Les cours d’origine : ", COURS.map((c, i) => /* @__PURE__ */ React.createElement(React.Fragment, { key: c.id }, i > 0 && ", ", /* @__PURE__ */ React.createElement("a", { href: c.source.url, target: "_blank", rel: "noopener" }, c.source.nom))), ". Pour un certificat officiel, il faut passer le quiz du cours d’origine.") : /* @__PURE__ */ React.createElement("li", null, "Pour le certificat officiel, il faut passer le quiz du cours, en anglais, sur ", /* @__PURE__ */ React.createElement("a", { href: "https://anthropic.skilljar.com/claude-code-101", target: "_blank", rel: "noopener" }, "anthropic.skilljar.com"), "."), /* @__PURE__ */ React.createElement("li", null, "La documentation officielle en français : ", /* @__PURE__ */ React.createElement("a", { href: "https://code.claude.com/docs/fr/overview", target: "_blank", rel: "noopener" }, "code.claude.com/docs/fr"), "."), /* @__PURE__ */ React.createElement("li", null, "Bloqué sur une étape ? Copie le titre de la leçon et pose ta question à Claude.")), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-contour", onClick: effacer }, /* @__PURE__ */ React.createElement(IcRelancer, { taille: 18 }), "Effacer ma progression")));
+}
+function Pastilles({ c, id, faites }) {
+  return /* @__PURE__ */ React.createElement("nav", { className: "pastilles", "aria-label": "Aller à une leçon" }, c.LECONS.map((l) => {
     const statut = l.id === id ? "courant" : faites.includes(l.id) ? "fait" : "a-venir";
     return /* @__PURE__ */ React.createElement(
       "a",
       {
         key: l.id,
-        href: `#lecon-${l.id}`,
+        href: lien(c, `lecon-${l.id}`),
         "data-statut": statut,
         "aria-label": `Leçon ${l.id} : ${l.titre}${faites.includes(l.id) ? ", terminée" : ""}`,
         "aria-current": l.id === id ? "step" : void 0
@@ -254,7 +312,8 @@ function Pastilles({ id, faites }) {
     );
   }));
 }
-function Classer({ lessonId }) {
+function Classer({ cours, lessonId }) {
+  const { CLASSER, PHASES } = cours;
   const [choix, setChoix] = useState({});
   const justes = CLASSER.filter((s, i) => choix[i] === s.r).length;
   return /* @__PURE__ */ React.createElement("div", { className: "classer" }, /* @__PURE__ */ React.createElement("ol", null, CLASSER.map((s, i) => {
@@ -266,29 +325,38 @@ function Classer({ lessonId }) {
         key: k,
         className: c === k ? k === s.r ? "est-juste" : "est-faux" : "",
         "aria-pressed": c === k,
-        onClick: () => { setChoix((x) => ({ ...x, [i]: k })); if (k !== s.r) enregistrerErreurExercice(lessonId, s.t, PHASES[k], PHASES[s.r]); }
+        onClick: () => {
+          setChoix((x) => ({ ...x, [i]: k }));
+          if (k !== s.r) enregistrerErreurExercice(cours, lessonId, s.t, PHASES[k], PHASES[s.r]);
+        }
       },
       c === k && (k === s.r ? /* @__PURE__ */ React.createElement(IcCheck, { taille: 16, strokeWidth: "3" }) : /* @__PURE__ */ React.createElement(IcX, { taille: 16, strokeWidth: "3" })),
       PHASES[k]
     ))), /* @__PURE__ */ React.createElement("p", { className: "classer-retour", "aria-live": "polite" }, c && (c === s.r ? "Juste." : `Pas tout à fait : c’est « ${PHASES[s.r]} ».`)));
   })), /* @__PURE__ */ React.createElement("p", { className: "classer-score" }, justes, " sur ", CLASSER.length, " bien placées"));
 }
-function Exercice({ ex, lessonId }) {
-  return /* @__PURE__ */ React.createElement("section", { className: "exercice", "aria-labelledby": "titre-exercice" }, /* @__PURE__ */ React.createElement("h2", { id: "titre-exercice" }, "Exercice"), ex.intro && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: ex.intro })), ex.classer && /* @__PURE__ */ React.createElement(Classer, { lessonId }), ex.etapes.length > 0 && /* @__PURE__ */ React.createElement("ol", { className: "exercice-etapes" }, ex.etapes.map((e, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement("span", { className: "exercice-num", "aria-hidden": "true" }, i + 1), /* @__PURE__ */ React.createElement("div", { className: "exercice-contenu" }, /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.t })), e.p && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p }), e.a && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.a })), e.p2 && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p2 }))))), ex.note && /* @__PURE__ */ React.createElement("p", { className: "note" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.note })), (ex.details || []).map((d, i) => /* @__PURE__ */ React.createElement(Depliable, { key: i, titre: d.titre }, d.t.map((x, j) => /* @__PURE__ */ React.createElement("p", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: x }))), d.p && /* @__PURE__ */ React.createElement(Prompt, { texte: d.p }))));
+function Exercice({ ex, cours, lessonId }) {
+  return /* @__PURE__ */ React.createElement("section", { className: "exercice", "aria-labelledby": "titre-exercice" }, /* @__PURE__ */ React.createElement("h2", { id: "titre-exercice" }, "Exercice"), ex.intro && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: ex.intro })), ex.classer && cours.CLASSER && cours.PHASES && /* @__PURE__ */ React.createElement(Classer, { cours, lessonId }), ex.etapes.length > 0 && /* @__PURE__ */ React.createElement("ol", { className: "exercice-etapes" }, ex.etapes.map((e, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement("span", { className: "exercice-num", "aria-hidden": "true" }, i + 1), /* @__PURE__ */ React.createElement("div", { className: "exercice-contenu" }, /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.t })), e.p && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p }), e.a && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.a })), e.p2 && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p2 }))))), ex.note && /* @__PURE__ */ React.createElement("p", { className: "note" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.note })), (ex.details || []).map((d, i) => /* @__PURE__ */ React.createElement(Depliable, { key: i, titre: d.titre }, d.t.map((x, j) => /* @__PURE__ */ React.createElement("p", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: x }))), d.p && /* @__PURE__ */ React.createElement(Prompt, { texte: d.p }))));
 }
-function Lecon({ id, etat, setEtat, toast }) {
-  const l = LECONS[id - 1];
-  const fait = etat.faites.includes(id);
+function Lecon({ cours: c, id, etat, setEtat, toast }) {
+  const l = c.LECONS[id - 1];
+  const TOTAL = c.LECONS.length;
+  const faites = progression(etat, c).faites;
+  const fait = faites.includes(id);
+  const suivant = COURS[COURS.indexOf(c) + 1];
   const basculer = () => {
-    setEtat((e) => ({
-      ...e,
-      faites: e.faites.includes(id) ? e.faites.filter((x) => x !== id) : [...e.faites, id]
-    }));
-    if (!fait) toast(id === TOTAL ? "Dernière leçon terminée. Place au quiz !" : `Leçon ${id} terminée`);
+    setEtat((e) => avecProgression(e, c, (p) => ({
+      ...p,
+      faites: p.faites.includes(id) ? p.faites.filter((x) => x !== id) : [...p.faites, id]
+    })));
+    if (!fait) toast(id === TOTAL ? c.QUIZ.length ? "Dernière leçon terminée. Place au quiz !" : "Dernière leçon terminée" : `Leçon ${id} terminée`);
   };
-  return /* @__PURE__ */ React.createElement("article", { className: "page lecon" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement("span", { className: "lecon-section" }, SECTIONS[l.section])), /* @__PURE__ */ React.createElement(Pastilles, { id, faites: etat.faites }), /* @__PURE__ */ React.createElement("h1", null, l.titre), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, "Leçon ", id, " sur ", TOTAL, ", environ ", l.duree, " minutes exercice compris"), /* @__PURE__ */ React.createElement("section", { className: "carte objectifs" }, /* @__PURE__ */ React.createElement("h2", null, "Dans cette leçon"), /* @__PURE__ */ React.createElement("ul", null, l.objectifs.map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: o }))))), /* @__PURE__ */ React.createElement("div", { className: "contenu" }, l.blocs.map((b, i) => /* @__PURE__ */ React.createElement(Bloc, { key: i, b }))), /* @__PURE__ */ React.createElement("aside", { className: "retenir" }, /* @__PURE__ */ React.createElement("h2", null, "À retenir"), /* @__PURE__ */ React.createElement("ul", null, l.retenir.map((r, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: r }))))), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, React.createElement("a", { className: "bouton bouton-contour", href: `revisions.html?lesson=${id}` }, "Noter une difficulté sur cette leçon")), React.createElement(Exercice, { ex: l.exercice, lessonId: id }), /* @__PURE__ */ React.createElement("nav", { className: "lecon-pied", "aria-label": "Navigation entre les leçons" }, id > 1 ? /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: `#lecon-${id - 1}` }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Précédente")) : /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: "#" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Parcours")), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-fait" + (fait ? " est-fait" : ""), onClick: basculer, "aria-pressed": fait }, /* @__PURE__ */ React.createElement("span", { className: "coche", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" })), fait ? "Leçon terminée" : "Marquer comme terminée"), id < TOTAL ? /* @__PURE__ */ React.createElement("a", { className: "bouton " + (fait ? "bouton-principal" : "bouton-contour"), href: `#lecon-${id + 1}` }, /* @__PURE__ */ React.createElement("span", null, "Suivante"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : /* @__PURE__ */ React.createElement("a", { className: "bouton " + (fait ? "bouton-principal" : "bouton-contour"), href: "#quiz" }, /* @__PURE__ */ React.createElement("span", null, "Quiz final"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 }))));
+  const classeSuite = "bouton " + (fait ? "bouton-principal" : "bouton-contour");
+  return /* @__PURE__ */ React.createElement("article", { className: "page lecon" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement("span", { className: "lecon-section" }, PLUSIEURS ? `${c.titre} · ${c.SECTIONS[l.section]}` : c.SECTIONS[l.section])), /* @__PURE__ */ React.createElement(Pastilles, { c, id, faites }), /* @__PURE__ */ React.createElement("h1", null, l.titre), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, "Leçon ", id, " sur ", TOTAL, ", environ ", l.duree, " minutes exercice compris"), /* @__PURE__ */ React.createElement("section", { className: "carte objectifs" }, /* @__PURE__ */ React.createElement("h2", null, "Dans cette leçon"), /* @__PURE__ */ React.createElement("ul", null, l.objectifs.map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: o }))))), /* @__PURE__ */ React.createElement("div", { className: "contenu" }, l.blocs.map((b, i) => /* @__PURE__ */ React.createElement(Bloc, { key: i, b }))), /* @__PURE__ */ React.createElement("aside", { className: "retenir" }, /* @__PURE__ */ React.createElement("h2", null, "À retenir"), /* @__PURE__ */ React.createElement("ul", null, l.retenir.map((r, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: r }))))), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: `revisions.html?course=${c.id}&lesson=${id}` }, "Noter une difficulté sur cette leçon")), /* @__PURE__ */ React.createElement(Exercice, { ex: l.exercice, cours: c, lessonId: id }), /* @__PURE__ */ React.createElement("nav", { className: "lecon-pied", "aria-label": "Navigation entre les leçons" }, id > 1 ? /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: lien(c, `lecon-${id - 1}`) }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Précédente")) : /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: "#" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Parcours")), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-fait" + (fait ? " est-fait" : ""), onClick: basculer, "aria-pressed": fait }, /* @__PURE__ */ React.createElement("span", { className: "coche", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" })), fait ? "Leçon terminée" : "Marquer comme terminée"), id < TOTAL ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, `lecon-${id + 1}`) }, /* @__PURE__ */ React.createElement("span", null, "Suivante"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : c.QUIZ.length ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, "quiz") }, /* @__PURE__ */ React.createElement("span", null, "Quiz final"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : suivant ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(suivant, "lecon-1") }, /* @__PURE__ */ React.createElement("span", null, "Cours suivant"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: "#" }, /* @__PURE__ */ React.createElement("span", null, "Parcours"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 }))));
 }
-function Quiz({ etat, setEtat }) {
+function Quiz({ cours, etat, setEtat }) {
+  const { QUIZ, LECONS } = cours;
+  const coursSuivant = COURS[COURS.indexOf(cours) + 1];
   const [idx, setIdx] = useState(0);
   const [reponses, setReponses] = useState(() => QUIZ.map(() => null));
   const [valide, setValide] = useState(() => QUIZ.map(() => false));
@@ -307,18 +375,18 @@ function Quiz({ etat, setEtat }) {
   }, [idx, valide]);
   const valider = useCallback(() => {
     if (choisi === null || valide[idx]) return;
-    if (choisi !== q.b) recordWrongQuiz(q, choisi);
+    if (choisi !== q.b) enregistrerErreurQuiz(cours, q, choisi);
     setValide((v) => v.map((x, i) => i === idx ? true : x));
-  }, [choisi, idx, valide, q]);
+  }, [choisi, idx, valide, q, cours]);
   const suivant = useCallback(() => {
     if (idx < QUIZ.length - 1) {
       setIdx(idx + 1);
       return;
     }
     setFini(true);
-    setEtat((e) => ({ ...e, quiz: { meilleur: Math.max(score, e.quiz ? e.quiz.meilleur : 0), dernier: score } }));
+    setEtat((e) => avecProgression(e, cours, (p) => ({ ...p, quiz: { meilleur: Math.max(score, p.quiz ? p.quiz.meilleur : 0), dernier: score } })));
     window.scrollTo(0, 0);
-  }, [idx, score, setEtat]);
+  }, [idx, score, setEtat, cours, QUIZ]);
   const recommencer = () => {
     setIdx(0);
     setFini(false);
@@ -357,9 +425,9 @@ function Quiz({ etat, setEtat }) {
         strokeDashoffset: c * (1 - score / QUIZ.length),
         transform: "rotate(-90 64 64)"
       }
-    )), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, score), "/", QUIZ.length)), /* @__PURE__ */ React.createElement("h1", { tabIndex: -1, ref: titreRef }, pct >= 80 ? "Bravo, tu maîtrises les bases" : "Encore un petit effort"), /* @__PURE__ */ React.createElement("p", { className: "chapo" }, pct >= 80 ? "Tu as compris l’essentiel de Claude Code. Garde le réflexe : explorer, planifier, coder, valider." : "Relis les leçons indiquées ci-dessous, puis retente le quiz."), /* @__PURE__ */ React.createElement("div", { className: "resultat-actions" }, /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-principal", onClick: recommencer }, /* @__PURE__ */ React.createElement(IcRelancer, { taille: 18 }), "Recommencer"), /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: "#" }, "Retour au parcours"))), ratees.length > 0 && /* @__PURE__ */ React.createElement("section", { className: "revision" }, /* @__PURE__ */ React.createElement("h2", null, "À revoir"), /* @__PURE__ */ React.createElement("ul", null, ratees.map((x) => /* @__PURE__ */ React.createElement("li", { key: x.i, className: "carte" }, /* @__PURE__ */ React.createElement("p", { className: "revision-q" }, fr(x.q)), /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement("strong", null, "Bonne réponse :"), " ", fr(x.o[x.b])), /* @__PURE__ */ React.createElement("p", { className: "discret" }, fr(x.e)), /* @__PURE__ */ React.createElement("a", { href: `#lecon-${x.l}` }, "Relire la leçon ", x.l, " : ", LECONS[x.l - 1].titre))))));
+    )), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, score), "/", QUIZ.length)), /* @__PURE__ */ React.createElement("h1", { tabIndex: -1, ref: titreRef }, pct >= 80 ? "Bravo, tu maîtrises les bases" : "Encore un petit effort"), /* @__PURE__ */ React.createElement("p", { className: "chapo" }, pct >= 80 ? "Tu as compris l’essentiel de Claude Code. Garde le réflexe : explorer, planifier, coder, valider." : "Relis les leçons indiquées ci-dessous, puis retente le quiz."), /* @__PURE__ */ React.createElement("div", { className: "resultat-actions" }, /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-principal", onClick: recommencer }, /* @__PURE__ */ React.createElement(IcRelancer, { taille: 18 }), "Recommencer"), coursSuivant && /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: lien(coursSuivant, "lecon-1") }, "Cours suivant : ", coursSuivant.titre, /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })), /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: "#" }, "Retour au parcours"))), ratees.length > 0 && /* @__PURE__ */ React.createElement("section", { className: "revision" }, /* @__PURE__ */ React.createElement("h2", null, "À revoir"), /* @__PURE__ */ React.createElement("ul", null, ratees.map((x) => /* @__PURE__ */ React.createElement("li", { key: x.i, className: "carte" }, /* @__PURE__ */ React.createElement("p", { className: "revision-q" }, fr(x.q)), /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement("strong", null, "Bonne réponse :"), " ", fr(x.o[x.b])), /* @__PURE__ */ React.createElement("p", { className: "discret" }, fr(x.e)), /* @__PURE__ */ React.createElement("a", { href: lien(cours, `lecon-${x.l}`) }, "Relire la leçon ", x.l, " : ", LECONS[x.l - 1].titre))))));
   }
-  return /* @__PURE__ */ React.createElement("article", { className: "page quiz" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement("span", { className: "lecon-section" }, "Quiz final")), /* @__PURE__ */ React.createElement("div", { className: "quiz-progression" }, /* @__PURE__ */ React.createElement("span", null, "Question ", idx + 1, " sur ", QUIZ.length), /* @__PURE__ */ React.createElement(Jauge, { valeur: idx + (estValide ? 1 : 0), total: QUIZ.length, etiquette: "Avancement du quiz" })), /* @__PURE__ */ React.createElement("section", { className: "question carte", key: idx }, /* @__PURE__ */ React.createElement("h1", { tabIndex: -1, ref: titreRef }, fr(q.q)), /* @__PURE__ */ React.createElement("div", { className: "choix", role: "radiogroup", "aria-label": "Réponses possibles" }, q.o.map((opt, j) => {
+  return /* @__PURE__ */ React.createElement("article", { className: "page quiz" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement("span", { className: "lecon-section" }, PLUSIEURS ? `Quiz final · ${cours.titre}` : "Quiz final")), /* @__PURE__ */ React.createElement("div", { className: "quiz-progression" }, /* @__PURE__ */ React.createElement("span", null, "Question ", idx + 1, " sur ", QUIZ.length), /* @__PURE__ */ React.createElement(Jauge, { valeur: idx + (estValide ? 1 : 0), total: QUIZ.length, etiquette: "Avancement du quiz" })), /* @__PURE__ */ React.createElement("section", { className: "question carte", key: idx }, /* @__PURE__ */ React.createElement("h1", { tabIndex: -1, ref: titreRef }, fr(q.q)), /* @__PURE__ */ React.createElement("div", { className: "choix", role: "radiogroup", "aria-label": "Réponses possibles" }, q.o.map((opt, j) => {
     const coche = choisi === j;
     let statut = coche ? "coche" : "";
     if (estValide) statut = j === q.b ? "juste" : coche ? "faux" : "eteint";
@@ -416,13 +484,12 @@ function App() {
     else racine.removeAttribute("data-theme");
   }, [etat.theme]);
   useEffect(() => {
-    const titres = { accueil: "Claude Code 101 en français", quiz: "Quiz final", lexique: "Lexique" };
-    document.title = route.vue === "lecon" ? `${LECONS[route.id - 1].titre} · Claude Code 101` : titres[route.vue] + (route.vue === "accueil" ? "" : " · Claude Code 101");
+    document.title = route.vue === "lecon" ? `${route.cours.LECONS[route.id - 1].titre} · ${route.cours.titre}` : route.vue === "quiz" ? `Quiz final · ${route.cours.titre}` : route.vue === "lexique" ? "Lexique · CL4UD3" : "CL4UD3";
   }, [route]);
-  const cle = route.vue + (route.id || "");
+  const cle = route.vue + (route.cours ? route.cours.id : "") + (route.id || "");
   let vue;
-  if (route.vue === "lecon") vue = /* @__PURE__ */ React.createElement(Lecon, { id: route.id, etat, setEtat, toast });
-  else if (route.vue === "quiz") vue = /* @__PURE__ */ React.createElement(Quiz, { etat, setEtat });
+  if (route.vue === "lecon") vue = /* @__PURE__ */ React.createElement(Lecon, { cours: route.cours, id: route.id, etat, setEtat, toast });
+  else if (route.vue === "quiz") vue = /* @__PURE__ */ React.createElement(Quiz, { cours: route.cours, etat, setEtat });
   else if (route.vue === "lexique") vue = /* @__PURE__ */ React.createElement(Lexique, null);
   else vue = /* @__PURE__ */ React.createElement(Accueil, { etat, setEtat, toast });
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("a", { className: "lien-evitement", href: "#contenu", onClick: (e) => {

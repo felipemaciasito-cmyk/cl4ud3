@@ -1,4 +1,4 @@
-/* Claude Code 101 en français — styles
+/* CL4UD3 — styles
    Jetons inspirés du thème 21st.dev « Amber Vivid_1 » (accent ambre, grands arrondis),
    adaptés à une base bleu encre pour la lisibilité. */
 
@@ -226,6 +226,14 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
 .parcours { margin-top: 2.5rem; }
 .parcours-section + .parcours-section { margin-top: 1.75rem; }
 .parcours-section h2 { font-size: 1.3rem; margin: 0 0 1rem; }
+
+/* plusieurs cours : un en-tête par cours, les sections passent en h3 */
+.parcours-cours + .parcours-cours { margin-top: 3rem; }
+.cours-entete { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; margin-bottom: 1.25rem; padding-bottom: .75rem; border-bottom: 1px solid var(--bord); }
+.cours-numero { flex-basis: 100%; color: var(--discret); font-size: .9rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.cours-entete h2 { font-size: 1.6rem; margin: 0; }
+.cours-avance { margin-left: auto; color: var(--discret); font-size: .95rem; font-variant-numeric: tabular-nums; }
+.parcours-section h3 { font-size: 1.3rem; margin: 0 0 1rem; }
 .etapes { list-style: none; margin: 0; padding: 0; }
 .etape { position: relative; padding-bottom: 1.1rem; }
 .etape:last-child { padding-bottom: 0; }

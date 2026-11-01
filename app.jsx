@@ -1,4 +1,4 @@
-// Claude Code 101 en français — application
+// CL4UD3 — application
 // Source lisible. Le fichier app.js utilisé par la page est généré à partir de celui-ci.
 // Composants inspirés de 21st.dev et adaptés :
 //  - « Vertical Descriptive Stepper » (sean0205) pour le parcours
@@ -6,45 +6,98 @@
 //  - thème « Amber Vivid_1 » (sriyanshintern) pour la couleur d’accent et les arrondis
 
 import { React, createRoot } from "./vendor-react.js";
-import { SECTIONS, LECONS, CLASSER, PHASES, QUIZ, LEXIQUE } from "./donnees.js";
+import { COURS } from "./cours.js";
 
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
-const TOTAL = LECONS.length;
+
+/* ---------------------------------------------------------------- cours */
+
+// Les cours viennent de cours.js, dans l’ordre du parcours. Tant qu’il n’y en a
+// qu’un, l’appli s’affiche exactement comme avant.
+const PREMIER = COURS[0];
+const PLUSIEURS = COURS.length > 1;
+const TOTAL_LECONS = COURS.reduce((n, c) => n + c.LECONS.length, 0);
+const DERNIER_QUIZ = [...COURS].reverse().find((c) => c.QUIZ.length) || PREMIER;
+
+// Le lexique réunit les mots de tous les cours, sans doublon, par ordre alphabétique.
+const LEXIQUE = (() => {
+  const vus = new Set();
+  return COURS.flatMap((c) => c.LEXIQUE || [])
+    .filter(([m]) => !vus.has(m) && vus.add(m))
+    .sort((a, b) => a[0].localeCompare(b[0], "fr"));
+})();
+
+// Adresses : #lecon-3 et #quiz pour le premier cours (les liens existants restent valables),
+// #<id du cours>/lecon-3 et #<id du cours>/quiz pour les suivants.
+function lien(c, page) {
+  return "#" + (c.id === PREMIER.id ? "" : c.id + "/") + page;
+}
 
 /* ---------------------------------------------------------------- état */
 
 const CLE = "cc101fr:v1";
 
+// La progression du premier cours garde son format d’origine (faites, quiz) ;
+// celle des cours suivants est rangée dans « cours », par id de cours.
 function lireEtat() {
   try {
     const o = JSON.parse(localStorage.getItem(CLE) || "null");
     if (o && Array.isArray(o.faites)) {
-      return { faites: o.faites, quiz: o.quiz || null, theme: o.theme || "auto" };
+      return { faites: o.faites, quiz: o.quiz || null, cours: o.cours || {}, theme: o.theme || "auto" };
     }
   } catch (e) {}
-  return { faites: [], quiz: null, theme: "auto" };
+  return { faites: [], quiz: null, cours: {}, theme: "auto" };
 }
 
-function enregistrerErreurQuiz(q, choisi) {
+function progression(etat, c) {
+  if (c.id === PREMIER.id) return { faites: etat.faites, quiz: etat.quiz };
+  const p = (etat.cours || {})[c.id] || {};
+  return { faites: p.faites || [], quiz: p.quiz || null };
+}
+
+function avecProgression(etat, c, f) {
+  const p = f(progression(etat, c));
+  if (c.id === PREMIER.id) return { ...etat, faites: p.faites, quiz: p.quiz };
+  return { ...etat, cours: { ...(etat.cours || {}), [c.id]: p } };
+}
+
+function nbFaites(etat, c) {
+  const p = progression(etat, c);
+  return c.LECONS.filter((l) => p.faites.includes(l.id)).length;
+}
+
+// La prochaine étape : la première leçon pas encore terminée, ou le quiz d’un cours
+// dont toutes les leçons sont faites, en suivant l’ordre des cours.
+function prochaineEtape(etat) {
+  for (const c of COURS) {
+    const p = progression(etat, c);
+    const l = c.LECONS.find((x) => !p.faites.includes(x.id));
+    if (l) return { cours: c, lecon: l };
+    if (!p.quiz && c.QUIZ.length) return { cours: c, quiz: true };
+  }
+  return null;
+}
+
+function enregistrerErreurQuiz(c, q, choisi) {
   try {
     const cle = "cc101fr:revisions:v1";
     const items = JSON.parse(localStorage.getItem(cle) || "[]");
-    const lecon = LECONS.find((l) => l.id === q.l) || LECONS[0];
-    const existant = items.find((x) => x.source === "quiz" && x.question === q.q && x.status !== "maitrise");
+    const lecon = c.LECONS.find((l) => l.id === q.l) || c.LECONS[0];
+    const existant = items.find((x) => x.source === "quiz" && (x.courseId || PREMIER.id) === c.id && x.question === q.q && x.status !== "maitrise");
     if (existant) { existant.occurrences = (existant.occurrences || 1) + 1; existant.updatedAt = Date.now(); localStorage.setItem(cle, JSON.stringify(items)); return; }
-    items.unshift({ id: "quiz-" + Date.now() + "-" + q.l, type: "Erreur", source: "quiz", courseId: "claude-code-101", courseTitle: "Claude Code 101", lessonId: lecon.id, lessonTitle: lecon.titre, topicTitle: lecon.objectifs[0] || lecon.titre, description: "Question : " + q.q + "\nRéponse donnée : " + q.o[choisi] + "\nRéponse attendue : " + q.o[q.b] + "\nExplication : " + q.e, question: q.q, wrongAnswer: q.o[choisi], correctAnswer: q.o[q.b], explanation: q.e, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
+    items.unshift({ id: "quiz-" + Date.now() + "-" + q.l, type: "Erreur", source: "quiz", courseId: c.id, courseTitle: c.titre, lessonId: lecon.id, lessonTitle: lecon.titre, topicTitle: lecon.objectifs[0] || lecon.titre, description: "Question : " + q.q + "\nRéponse donnée : " + q.o[choisi] + "\nRéponse attendue : " + q.o[q.b] + "\nExplication : " + q.e, question: q.q, wrongAnswer: q.o[choisi], correctAnswer: q.o[q.b], explanation: q.e, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
     localStorage.setItem(cle, JSON.stringify(items));
   } catch (e) {}
 }
 
-function enregistrerErreurExercice(lessonId, question, choix, bonneReponse) {
+function enregistrerErreurExercice(c, lessonId, question, choix, bonneReponse) {
   try {
     const cle = "cc101fr:revisions:v1";
     const items = JSON.parse(localStorage.getItem(cle) || "[]");
-    const lecon = LECONS.find((l) => l.id === lessonId) || LECONS[0];
-    const existant = items.find((x) => x.source === "exercice" && x.lessonId === lessonId && x.question === question && x.status !== "maitrise");
+    const lecon = c.LECONS.find((l) => l.id === lessonId) || c.LECONS[0];
+    const existant = items.find((x) => x.source === "exercice" && (x.courseId || PREMIER.id) === c.id && x.lessonId === lessonId && x.question === question && x.status !== "maitrise");
     if (existant) { existant.occurrences = (existant.occurrences || 1) + 1; existant.updatedAt = Date.now(); localStorage.setItem(cle, JSON.stringify(items)); return; }
-    items.unshift({ id: "ex-" + Date.now() + "-" + lessonId, type: "Erreur", source: "exercice", courseId: "claude-code-101", courseTitle: "Claude Code 101", lessonId, lessonTitle: lecon.titre, topicTitle: question, description: "Question : " + question + "\nRéponse donnée : " + choix + "\nRéponse attendue : " + bonneReponse, question, wrongAnswer: choix, correctAnswer: bonneReponse, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
+    items.unshift({ id: "ex-" + Date.now() + "-" + lessonId, type: "Erreur", source: "exercice", courseId: c.id, courseTitle: c.titre, lessonId, lessonTitle: lecon.titre, topicTitle: question, description: "Question : " + question + "\nRéponse donnée : " + choix + "\nRéponse attendue : " + bonneReponse, question, wrongAnswer: choix, correctAnswer: bonneReponse, status: "a-comprendre", createdAt: Date.now(), updatedAt: Date.now(), occurrences: 1 });
     localStorage.setItem(cle, JSON.stringify(items));
   } catch (e) {}
 }
@@ -59,10 +112,11 @@ function useEtat() {
 
 function lireRoute() {
   const h = location.hash.replace(/^#/, "");
-  if (h === "quiz") return { vue: "quiz" };
   if (h === "lexique") return { vue: "lexique" };
-  const m = /^lecon-(\d{1,2})$/.exec(h);
-  if (m && +m[1] >= 1 && +m[1] <= TOTAL) return { vue: "lecon", id: +m[1] };
+  const m = /^(?:([a-z0-9-]+)\/)?(quiz|lecon-(\d{1,3}))$/.exec(h);
+  const c = m && (m[1] ? COURS.find((x) => x.id === m[1]) : PREMIER);
+  if (c && m[2] === "quiz" && c.QUIZ.length) return { vue: "quiz", cours: c };
+  if (c && m[3] && +m[3] >= 1 && +m[3] <= c.LECONS.length) return { vue: "lecon", cours: c, id: +m[3] };
   return { vue: "accueil" };
 }
 
@@ -250,23 +304,27 @@ function Barre({ etat, setEtat, route }) {
   const theme = etat.theme;
   const suivant = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
   const Ic = theme === "clair" ? IcSoleil : theme === "sombre" ? IcLune : IcAuto;
+  // Le lien Quiz mène au quiz du cours affiché, sinon à celui du cours en cours.
+  const etape = prochaineEtape(etat);
+  const coursQuiz = [route.cours, etape && etape.cours].find((c) => c && c.QUIZ.length) || DERNIER_QUIZ;
+  const faites = COURS.reduce((n, c) => n + nbFaites(etat, c), 0);
   return (
     <header className="barre">
       <div className="barre-int">
         <a href="#" className="marque">
           <span className="marque-logo" aria-hidden="true"><i /><i /><i /></span>
-          <span className="marque-nom">Claude Code 101 <span>en français</span></span>
+          <span className="marque-nom">CL4UD3</span>
         </a>
         <nav className="barre-nav" aria-label="Navigation principale">
           <a href="#lexique" aria-current={route.vue === "lexique" ? "page" : undefined}><IcLivre taille={18} /><span>Lexique</span></a>
-          <a href="#quiz" aria-current={route.vue === "quiz" ? "page" : undefined}><IcDrapeau taille={18} /><span>Quiz</span></a>
+          <a href={lien(coursQuiz, "quiz")} aria-current={route.vue === "quiz" ? "page" : undefined}><IcDrapeau taille={18} /><span>Quiz</span></a>
           <a href="revisions.html"><IcCheck taille={18} /><span>Révisions</span></a>
         </nav>
         <button type="button" className="bouton-icone" onClick={() => setEtat((e) => ({ ...e, theme: suivant }))}
           aria-label={`Thème ${NOM_THEME[theme]}. Passer au thème ${NOM_THEME[suivant]}`}>
           <Ic taille={19} />
         </button>
-        <Anneau valeur={etat.faites.length} total={TOTAL} />
+        <Anneau valeur={faites} total={TOTAL_LECONS} />
       </div>
     </header>
   );
@@ -274,10 +332,10 @@ function Barre({ etat, setEtat, route }) {
 
 /* ---------------------------------------------------------------- accueil : le parcours (stepper vertical) */
 
-function Etape({ lecon, statut }) {
+function Etape({ c, lecon, statut }) {
   return (
     <li className="etape" data-statut={statut}>
-      <a href={`#lecon-${lecon.id}`} className="etape-lien">
+      <a href={lien(c, `lecon-${lecon.id}`)} className="etape-lien">
         <span className="etape-indicateur">
           {statut === "fait" ? <IcCheck taille={18} strokeWidth="3" /> : lecon.id}
         </span>
@@ -291,18 +349,75 @@ function Etape({ lecon, statut }) {
   );
 }
 
+function ParcoursCours({ c, numero, etat, etape }) {
+  const p = progression(etat, c);
+  const Titre = PLUSIEURS ? "h3" : "h2";
+  const ici = etape && etape.cours === c ? etape : null;
+  const sections = (
+    <>
+      {c.SECTIONS.map((s, si) => (
+        <section key={si} className="parcours-section">
+          <Titre>{s}</Titre>
+          <ol className="etapes">
+            {c.LECONS.filter((l) => l.section === si).map((l) => (
+              <Etape key={l.id} c={c} lecon={l}
+                statut={p.faites.includes(l.id) ? "fait" : ici && ici.lecon === l ? "actif" : "a-venir"} />
+            ))}
+          </ol>
+        </section>
+      ))}
+      {c.QUIZ.length > 0 && (
+        <section className="parcours-section">
+          <Titre>Pour finir</Titre>
+          <ol className="etapes">
+            <li className="etape etape-terminus" data-statut={p.quiz ? "fait" : ici && ici.quiz ? "actif" : "a-venir"}>
+              <a href={lien(c, "quiz")} className="etape-lien">
+                <span className="etape-indicateur">{p.quiz ? <IcCheck taille={18} strokeWidth="3" /> : <IcDrapeau taille={18} />}</span>
+                <span className="etape-texte">
+                  <span className="etape-titre">Quiz final</span>
+                  <span className="etape-desc">{c.QUIZ.length} questions sur tout le {PLUSIEURS ? "cours" : "parcours"}, une à la fois.</span>
+                </span>
+              </a>
+            </li>
+          </ol>
+        </section>
+      )}
+    </>
+  );
+  if (!PLUSIEURS) return sections;
+  return (
+    <section className="parcours-cours" aria-labelledby={`cours-${c.id}`}>
+      <div className="cours-entete">
+        <span className="cours-numero">Cours {numero}</span>
+        <h2 id={`cours-${c.id}`}>{c.titre}</h2>
+        <span className="cours-avance">{nbFaites(etat, c)} sur {c.LECONS.length} leçons</span>
+      </div>
+      {sections}
+    </section>
+  );
+}
+
 function Accueil({ etat, setEtat, toast }) {
-  const n = etat.faites.length;
-  const prochaine = LECONS.find((l) => !etat.faites.includes(l.id));
-  const pct = Math.round((n / TOTAL) * 100);
-  const cta = !prochaine
-    ? { href: "#quiz", t: "Passer le quiz final" }
-    : n === 0 ? { href: "#lecon-1", t: "Commencer le parcours" }
-    : { href: `#lecon-${prochaine.id}`, t: `Reprendre : leçon ${prochaine.id}` };
+  const n = COURS.reduce((s, c) => s + nbFaites(etat, c), 0);
+  const etape = prochaineEtape(etat);
+  const pct = Math.round((n / TOTAL_LECONS) * 100);
+  const cta = !etape
+    ? { href: lien(DERNIER_QUIZ, "quiz"), t: "Passer le quiz final" }
+    : n === 0 ? { href: lien(PREMIER, "lecon-1"), t: "Commencer le parcours" }
+    : etape.quiz ? { href: lien(etape.cours, "quiz"), t: PLUSIEURS ? `Passer le quiz : ${etape.cours.titre}` : "Passer le quiz final" }
+    : { href: lien(etape.cours, `lecon-${etape.lecon.id}`), t: PLUSIEURS ? `Reprendre : ${etape.cours.titre}, leçon ${etape.lecon.id}` : `Reprendre : leçon ${etape.lecon.id}` };
+  const ou = n === 0 ? "Pas encore commencé"
+    : n === TOTAL_LECONS || !etape ? "Parcours terminé"
+    : etape.quiz ? `${etape.cours.titre} : quiz final à passer`
+    : PLUSIEURS ? `${etape.cours.titre} : leçon ${etape.lecon.id} sur ${etape.cours.LECONS.length} à suivre`
+    : `Leçon ${etape.lecon.id} sur ${TOTAL_LECONS} à suivre`;
+  const quiz = PLUSIEURS
+    ? `Quiz réussis : ${COURS.filter((c) => progression(etat, c).quiz).length} sur ${COURS.filter((c) => c.QUIZ.length).length}`
+    : etat.quiz ? `Meilleur score au quiz : ${etat.quiz.meilleur}/${PREMIER.QUIZ.length}` : "Quiz pas encore passé";
 
   const effacer = () => {
     if (window.confirm("Effacer ta progression et ton score sur cet appareil ?")) {
-      setEtat((e) => ({ ...e, faites: [], quiz: null }));
+      setEtat((e) => ({ ...e, faites: [], quiz: null, cours: {} }));
       toast("Progression effacée");
     }
   };
@@ -310,17 +425,19 @@ function Accueil({ etat, setEtat, toast }) {
   return (
     <div className="page">
       <section className="hero">
-        <h1>Claude Code 101, en français</h1>
-        <p className="chapo">Le parcours du cours d’Anthropic Academy, réécrit en français et pensé pour l’iPad. Douze leçons, des exercices sur claude.ai/code et un quiz final.</p>
+        <h1>CL4UD3</h1>
+        <p className="chapo">{PLUSIEURS
+          ? `Des cours officiels, réécrits en français et pensés pour l’iPad, à suivre dans l’ordre. Au programme : ${COURS.length} cours, ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final par cours.`
+          : `Le cours Claude Code 101 d’Anthropic Academy, réécrit en français et pensé pour l’iPad. Au programme : ${TOTAL_LECONS} leçons, des exercices sur claude.ai/code et un quiz final.`}</p>
         <div className="progression">
           <div className="progression-ligne">
-            <span>{n === 0 ? "Pas encore commencé" : n === TOTAL ? "Parcours terminé" : `Leçon ${prochaine.id} sur ${TOTAL} à suivre`}</span>
+            <span>{ou}</span>
             <strong>{pct} %</strong>
           </div>
-          <Jauge valeur={n} total={TOTAL} etiquette="Progression dans le parcours" />
+          <Jauge valeur={n} total={TOTAL_LECONS} etiquette="Progression dans le parcours" />
           <div className="progression-ligne discret">
             <span>{n} {n > 1 ? "leçons terminées" : "leçon terminée"}</span>
-            <span>{etat.quiz ? `Meilleur score au quiz : ${etat.quiz.meilleur}/${QUIZ.length}` : "Quiz pas encore passé"}</span>
+            <span>{quiz}</span>
           </div>
         </div>
         <a className="bouton bouton-principal bouton-grand" href={cta.href}>{cta.t}<IcDroite taille={20} /></a>
@@ -336,39 +453,21 @@ function Accueil({ etat, setEtat, toast }) {
       </section>
 
       <nav className="parcours" aria-label="Les leçons du parcours">
-        {SECTIONS.map((s, si) => (
-          <section key={si} className="parcours-section">
-            <h2>{s}</h2>
-            <ol className="etapes">
-              {LECONS.filter((l) => l.section === si).map((l) => (
-                <Etape key={l.id} lecon={l}
-                  statut={etat.faites.includes(l.id) ? "fait" : prochaine && prochaine.id === l.id ? "actif" : "a-venir"} />
-              ))}
-            </ol>
-          </section>
-        ))}
-        <section className="parcours-section">
-          <h2>Pour finir</h2>
-          <ol className="etapes">
-            <li className="etape etape-terminus" data-statut={etat.quiz ? "fait" : !prochaine ? "actif" : "a-venir"}>
-              <a href="#quiz" className="etape-lien">
-                <span className="etape-indicateur">{etat.quiz ? <IcCheck taille={18} strokeWidth="3" /> : <IcDrapeau taille={18} />}</span>
-                <span className="etape-texte">
-                  <span className="etape-titre">Quiz final</span>
-                  <span className="etape-desc">{QUIZ.length} questions sur tout le parcours, une à la fois.</span>
-                </span>
-              </a>
-            </li>
-          </ol>
-        </section>
+        {COURS.map((c, ci) => <ParcoursCours key={c.id} c={c} numero={ci + 1} etat={etat} etape={etape} />)}
       </nav>
 
       <section className="apropos">
         <h2>À propos de ce parcours</h2>
-        <p>Parcours non officiel, rédigé par Claude à partir du programme public de Claude Code 101 (Anthropic Academy) et de la documentation officielle de Claude Code en français. Il suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad.</p>
+        {PLUSIEURS
+          ? <p>Parcours non officiel, rédigé par Claude à partir des programmes publics des cours d’origine et de la documentation officielle de Claude Code en français. Chaque cours suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad.</p>
+          : <p>Parcours non officiel, rédigé par Claude à partir du programme public de Claude Code 101 (Anthropic Academy) et de la documentation officielle de Claude Code en français. Il suit les mêmes leçons, dans le même ordre. Les vidéos et exercices d’origine ne sont pas reproduits : les exercices d’ici sont pensés pour l’iPad.</p>}
         <p>Ta progression est enregistrée sur cet appareil.</p>
         <ul>
-          <li>Pour le certificat officiel, il faut passer le quiz du cours, en anglais, sur <a href="https://anthropic.skilljar.com/claude-code-101" target="_blank" rel="noopener">anthropic.skilljar.com</a>.</li>
+          {PLUSIEURS
+            ? <li>Les cours d’origine : {COURS.map((c, i) => (
+                <React.Fragment key={c.id}>{i > 0 && ", "}<a href={c.source.url} target="_blank" rel="noopener">{c.source.nom}</a></React.Fragment>
+              ))}. Pour un certificat officiel, il faut passer le quiz du cours d’origine.</li>
+            : <li>Pour le certificat officiel, il faut passer le quiz du cours, en anglais, sur <a href="https://anthropic.skilljar.com/claude-code-101" target="_blank" rel="noopener">anthropic.skilljar.com</a>.</li>}
           <li>La documentation officielle en français : <a href="https://code.claude.com/docs/fr/overview" target="_blank" rel="noopener">code.claude.com/docs/fr</a>.</li>
           <li>Bloqué sur une étape ? Copie le titre de la leçon et pose ta question à Claude.</li>
         </ul>
@@ -380,13 +479,13 @@ function Accueil({ etat, setEtat, toast }) {
 
 /* ---------------------------------------------------------------- leçon */
 
-function Pastilles({ id, faites }) {
+function Pastilles({ c, id, faites }) {
   return (
     <nav className="pastilles" aria-label="Aller à une leçon">
-      {LECONS.map((l) => {
+      {c.LECONS.map((l) => {
         const statut = l.id === id ? "courant" : faites.includes(l.id) ? "fait" : "a-venir";
         return (
-          <a key={l.id} href={`#lecon-${l.id}`} data-statut={statut}
+          <a key={l.id} href={lien(c, `lecon-${l.id}`)} data-statut={statut}
             aria-label={`Leçon ${l.id} : ${l.titre}${faites.includes(l.id) ? ", terminée" : ""}`}
             aria-current={l.id === id ? "step" : undefined}>
             <span />
@@ -397,7 +496,9 @@ function Pastilles({ id, faites }) {
   );
 }
 
-function Classer({ lessonId }) {
+// Exercice interactif « classer » : les étapes et les phases viennent du cours (CLASSER, PHASES).
+function Classer({ cours, lessonId }) {
+  const { CLASSER, PHASES } = cours;
   const [choix, setChoix] = useState({});
   const justes = CLASSER.filter((s, i) => choix[i] === s.r).length;
   return (
@@ -413,7 +514,7 @@ function Classer({ lessonId }) {
                   <button type="button" key={k}
                     className={c === k ? (k === s.r ? "est-juste" : "est-faux") : ""}
                     aria-pressed={c === k}
-                    onClick={() => { setChoix((x) => ({ ...x, [i]: k })); if (k !== s.r) enregistrerErreurExercice(lessonId, s.t, PHASES[k], PHASES[s.r]); }}>
+                    onClick={() => { setChoix((x) => ({ ...x, [i]: k })); if (k !== s.r) enregistrerErreurExercice(cours, lessonId, s.t, PHASES[k], PHASES[s.r]); }}>
                     {c === k && (k === s.r ? <IcCheck taille={16} strokeWidth="3" /> : <IcX taille={16} strokeWidth="3" />)}
                     {PHASES[k]}
                   </button>
@@ -431,12 +532,12 @@ function Classer({ lessonId }) {
   );
 }
 
-function Exercice({ ex, lessonId }) {
+function Exercice({ ex, cours, lessonId }) {
   return (
     <section className="exercice" aria-labelledby="titre-exercice">
       <h2 id="titre-exercice">Exercice</h2>
       {ex.intro && <p><Texte t={ex.intro} /></p>}
-      {ex.classer && <Classer lessonId={lessonId} />}
+      {ex.classer && cours.CLASSER && cours.PHASES && <Classer cours={cours} lessonId={lessonId} />}
       {ex.etapes.length > 0 && (
         <ol className="exercice-etapes">
           {ex.etapes.map((e, i) => (
@@ -463,23 +564,27 @@ function Exercice({ ex, lessonId }) {
   );
 }
 
-function Lecon({ id, etat, setEtat, toast }) {
-  const l = LECONS[id - 1];
-  const fait = etat.faites.includes(id);
+function Lecon({ cours: c, id, etat, setEtat, toast }) {
+  const l = c.LECONS[id - 1];
+  const TOTAL = c.LECONS.length;
+  const faites = progression(etat, c).faites;
+  const fait = faites.includes(id);
+  const suivant = COURS[COURS.indexOf(c) + 1];
   const basculer = () => {
-    setEtat((e) => ({
-      ...e,
-      faites: e.faites.includes(id) ? e.faites.filter((x) => x !== id) : [...e.faites, id],
-    }));
-    if (!fait) toast(id === TOTAL ? "Dernière leçon terminée. Place au quiz !" : `Leçon ${id} terminée`);
+    setEtat((e) => avecProgression(e, c, (p) => ({
+      ...p,
+      faites: p.faites.includes(id) ? p.faites.filter((x) => x !== id) : [...p.faites, id],
+    })));
+    if (!fait) toast(id === TOTAL ? (c.QUIZ.length ? "Dernière leçon terminée. Place au quiz !" : "Dernière leçon terminée") : `Leçon ${id} terminée`);
   };
+  const classeSuite = "bouton " + (fait ? "bouton-principal" : "bouton-contour");
   return (
     <article className="page lecon">
       <div className="lecon-haut">
         <a href="#" className="retour"><IcGauche taille={18} />Parcours</a>
-        <span className="lecon-section">{SECTIONS[l.section]}</span>
+        <span className="lecon-section">{PLUSIEURS ? `${c.titre} · ${c.SECTIONS[l.section]}` : c.SECTIONS[l.section]}</span>
       </div>
-      <Pastilles id={id} faites={etat.faites} />
+      <Pastilles c={c} id={id} faites={faites} />
       <h1>{l.titre}</h1>
       <p className="lecon-meta">Leçon {id} sur {TOTAL}, environ {l.duree} minutes exercice compris</p>
 
@@ -495,20 +600,24 @@ function Lecon({ id, etat, setEtat, toast }) {
         <ul>{l.retenir.map((r, i) => <li key={i}><Texte t={r} /></li>)}</ul>
       </aside>
 
-      <p className="lecon-meta"><a className="bouton bouton-contour" href={`revisions.html?lesson=${id}`}>Noter une difficulté sur cette leçon</a></p>
-      <Exercice ex={l.exercice} lessonId={id} />
+      <p className="lecon-meta"><a className="bouton bouton-contour" href={`revisions.html?course=${c.id}&lesson=${id}`}>Noter une difficulté sur cette leçon</a></p>
+      <Exercice ex={l.exercice} cours={c} lessonId={id} />
 
       <nav className="lecon-pied" aria-label="Navigation entre les leçons">
         {id > 1
-          ? <a className="bouton bouton-contour" href={`#lecon-${id - 1}`}><IcGauche taille={18} /><span>Précédente</span></a>
+          ? <a className="bouton bouton-contour" href={lien(c, `lecon-${id - 1}`)}><IcGauche taille={18} /><span>Précédente</span></a>
           : <a className="bouton bouton-contour" href="#"><IcGauche taille={18} /><span>Parcours</span></a>}
         <button type="button" className={"bouton bouton-fait" + (fait ? " est-fait" : "")} onClick={basculer} aria-pressed={fait}>
           <span className="coche" aria-hidden="true"><IcCheck taille={18} strokeWidth="3" /></span>
           {fait ? "Leçon terminée" : "Marquer comme terminée"}
         </button>
         {id < TOTAL
-          ? <a className={"bouton " + (fait ? "bouton-principal" : "bouton-contour")} href={`#lecon-${id + 1}`}><span>Suivante</span><IcDroite taille={18} /></a>
-          : <a className={"bouton " + (fait ? "bouton-principal" : "bouton-contour")} href="#quiz"><span>Quiz final</span><IcDroite taille={18} /></a>}
+          ? <a className={classeSuite} href={lien(c, `lecon-${id + 1}`)}><span>Suivante</span><IcDroite taille={18} /></a>
+          : c.QUIZ.length
+          ? <a className={classeSuite} href={lien(c, "quiz")}><span>Quiz final</span><IcDroite taille={18} /></a>
+          : suivant
+          ? <a className={classeSuite} href={lien(suivant, "lecon-1")}><span>Cours suivant</span><IcDroite taille={18} /></a>
+          : <a className={classeSuite} href="#"><span>Parcours</span><IcDroite taille={18} /></a>}
       </nav>
     </article>
   );
@@ -516,7 +625,9 @@ function Lecon({ id, etat, setEtat, toast }) {
 
 /* ---------------------------------------------------------------- quiz (questionnaire, une question à la fois) */
 
-function Quiz({ etat, setEtat }) {
+function Quiz({ cours, etat, setEtat }) {
+  const { QUIZ, LECONS } = cours;
+  const coursSuivant = COURS[COURS.indexOf(cours) + 1];
   const [idx, setIdx] = useState(0);
   const [reponses, setReponses] = useState(() => QUIZ.map(() => null));
   const [valide, setValide] = useState(() => QUIZ.map(() => false));
@@ -537,16 +648,16 @@ function Quiz({ etat, setEtat }) {
 
   const valider = useCallback(() => {
     if (choisi === null || valide[idx]) return;
-    if (choisi !== q.b) recordWrongQuiz(q, choisi);
+    if (choisi !== q.b) enregistrerErreurQuiz(cours, q, choisi);
     setValide((v) => v.map((x, i) => (i === idx ? true : x)));
-  }, [choisi, idx, valide, q]);
+  }, [choisi, idx, valide, q, cours]);
 
   const suivant = useCallback(() => {
     if (idx < QUIZ.length - 1) { setIdx(idx + 1); return; }
     setFini(true);
-    setEtat((e) => ({ ...e, quiz: { meilleur: Math.max(score, e.quiz ? e.quiz.meilleur : 0), dernier: score } }));
+    setEtat((e) => avecProgression(e, cours, (p) => ({ ...p, quiz: { meilleur: Math.max(score, p.quiz ? p.quiz.meilleur : 0), dernier: score } })));
     window.scrollTo(0, 0);
-  }, [idx, score, setEtat]);
+  }, [idx, score, setEtat, cours, QUIZ]);
 
   const recommencer = () => {
     setIdx(0); setFini(false);
@@ -590,6 +701,7 @@ function Quiz({ etat, setEtat }) {
             : "Relis les leçons indiquées ci-dessous, puis retente le quiz."}</p>
           <div className="resultat-actions">
             <button type="button" className="bouton bouton-principal" onClick={recommencer}><IcRelancer taille={18} />Recommencer</button>
+            {coursSuivant && <a className="bouton bouton-contour" href={lien(coursSuivant, "lecon-1")}>Cours suivant : {coursSuivant.titre}<IcDroite taille={18} /></a>}
             <a className="bouton bouton-contour" href="#">Retour au parcours</a>
           </div>
         </section>
@@ -602,7 +714,7 @@ function Quiz({ etat, setEtat }) {
                   <p className="revision-q">{fr(x.q)}</p>
                   <p><strong>{"Bonne réponse\u00A0:"}</strong> {fr(x.o[x.b])}</p>
                   <p className="discret">{fr(x.e)}</p>
-                  <a href={`#lecon-${x.l}`}>Relire la leçon {x.l} : {LECONS[x.l - 1].titre}</a>
+                  <a href={lien(cours, `lecon-${x.l}`)}>Relire la leçon {x.l} : {LECONS[x.l - 1].titre}</a>
                 </li>
               ))}
             </ul>
@@ -616,7 +728,7 @@ function Quiz({ etat, setEtat }) {
     <article className="page quiz">
       <div className="lecon-haut">
         <a href="#" className="retour"><IcGauche taille={18} />Parcours</a>
-        <span className="lecon-section">Quiz final</span>
+        <span className="lecon-section">{PLUSIEURS ? `Quiz final · ${cours.titre}` : "Quiz final"}</span>
       </div>
       <div className="quiz-progression">
         <span>Question {idx + 1} sur {QUIZ.length}</span>
@@ -714,16 +826,16 @@ function App() {
   }, [etat.theme]);
 
   useEffect(() => {
-    const titres = { accueil: "Claude Code 101 en français", quiz: "Quiz final", lexique: "Lexique" };
-    document.title = route.vue === "lecon"
-      ? `${LECONS[route.id - 1].titre} · Claude Code 101`
-      : titres[route.vue] + (route.vue === "accueil" ? "" : " · Claude Code 101");
+    document.title = route.vue === "lecon" ? `${route.cours.LECONS[route.id - 1].titre} · ${route.cours.titre}`
+      : route.vue === "quiz" ? `Quiz final · ${route.cours.titre}`
+      : route.vue === "lexique" ? "Lexique · CL4UD3"
+      : "CL4UD3";
   }, [route]);
 
-  const cle = route.vue + (route.id || "");
+  const cle = route.vue + (route.cours ? route.cours.id : "") + (route.id || "");
   let vue;
-  if (route.vue === "lecon") vue = <Lecon id={route.id} etat={etat} setEtat={setEtat} toast={toast} />;
-  else if (route.vue === "quiz") vue = <Quiz etat={etat} setEtat={setEtat} />;
+  if (route.vue === "lecon") vue = <Lecon cours={route.cours} id={route.id} etat={etat} setEtat={setEtat} toast={toast} />;
+  else if (route.vue === "quiz") vue = <Quiz cours={route.cours} etat={etat} setEtat={setEtat} />;
   else if (route.vue === "lexique") vue = <Lexique />;
   else vue = <Accueil etat={etat} setEtat={setEtat} toast={toast} />;
 

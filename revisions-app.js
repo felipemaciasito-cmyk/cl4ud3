@@ -1,8 +1,10 @@
 import { LECONS, SECTIONS, QUIZ } from "./donnees.js";
+import { COURS } from "./cours.js";
 
 const STORE = "cc101fr:revisions:v1";
 const AI_STORE = "cc101fr:revision-ai:v1";
-const COURSE_REGISTRY = [{ id: "claude-code-101", title: "Claude Code 101", lessons: LECONS }];
+// Les cours viennent de cours.js : un nouveau cours apparaît ici sans autre changement.
+const COURSE_REGISTRY = COURS.map(c => ({ id: c.id, title: c.titre, lessons: c.LECONS, sections: c.SECTIONS }));
 const esc = (s="") => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const date = (v) => new Intl.DateTimeFormat("fr-FR",{dateStyle:"medium"}).format(new Date(v));
 const uid = () => "r" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -50,7 +52,7 @@ function topicsFor(l){
  return out;
 }
 function catalog(){
- return COURSE_REGISTRY.map(course=>({...course,lessons:course.lessons.map(l=>({id:l.id,titre:l.titre,section:SECTIONS[l.section],topics:topicsFor(l)}))}));
+ return COURSE_REGISTRY.map(course=>({...course,lessons:course.lessons.map(l=>({id:l.id,titre:l.titre,section:(course.sections||SECTIONS)[l.section],topics:topicsFor(l)}))}));
 }
 function save(item){
  const all=readItems(); const old=all.findIndex(x=>x.id===item.id);
@@ -75,7 +77,7 @@ function render(){
  const statColor={"a-comprendre":"status-warn","en-cours":"status-progress","maitrise":"status-done"};
  function shell(){
  root.innerHTML=`
- <header class="rev-top"><a class="rev-brand" href="index.html">← <span>Claude Code 101</span></a><span class="rev-top-label">ESPACE DE CONSOLIDATION</span></header>
+ <header class="rev-top"><a class="rev-brand" href="index.html">← <span>CL4UD3</span></a><span class="rev-top-label">ESPACE DE CONSOLIDATION</span></header>
  <main class="rev-main">
  <section class="rev-intro"><p class="eyebrow">APPRENDRE · COMPRENDRE · INTÉGRER</p><h1>Révisions & compréhension</h1><p class="rev-lead">Un espace pour identifier chaque zone de flou, reprendre les notions à ton rythme et vérifier que tu les maîtrises réellement.</p></section>
  <section class="rev-stats" id="stats"></section>
@@ -106,7 +108,7 @@ function render(){
  items=readItems(); ai=readAI();
  const mastered=items.filter(x=>x.status==="maitrise").length;
  const open=items.filter(x=>x.status!=="maitrise").length;
- const lessonsWith= new Set(items.filter(x=>x.status!=="maitrise").map(x=>x.lessonId)).size;
+ const lessonsWith= new Set(items.filter(x=>x.status!=="maitrise").map(x=>(x.courseId||COURSE_REGISTRY[0].id)+":"+x.lessonId)).size;
  document.getElementById("stats").innerHTML=[
  ["Difficultés enregistrées",items.length],["À consolider",open],["Notions maîtrisées",mastered],["Leçons concernées",lessonsWith]
  ].map(([t,n])=>`<article class="rev-stat"><span>${t}</span><strong>${n}</strong></article>`).join("");
@@ -120,11 +122,11 @@ function render(){
  const term=search.toLocaleLowerCase("fr");
  const shown=items.filter(x=>(filter==="tous"||x.status===filter)&&(!term||[x.lessonTitle,x.topicTitle,x.description,x.type].join(" ").toLocaleLowerCase("fr").includes(term)));
  document.getElementById("items-list").innerHTML=shown.length?shown.map(x=>`
- <article class="rev-item" data-id="${esc(x.id)}"><div class="rev-item-main"><div class="rev-item-meta"><span class="rev-type">${esc(x.type)}</span><span class="rev-small">${esc(x.lessonTitle||"Cours")}</span></div><h3>${esc(x.topicTitle||"Notion à préciser")}</h3><p>${esc((x.description||"").split("\n")[0])}</p><div class="rev-item-bottom"><span class="rev-status ${statColor[x.status]||statColor["a-comprendre"]}">${statuts[x.status]||statuts["a-comprendre"]}</span><span class="rev-small">${date(x.updatedAt||x.createdAt)}</span></div></div><button class="rev-open" data-open="${esc(x.id)}" aria-label="Ouvrir la fiche">Ouvrir →</button></article>`).join(""):'<div class="rev-empty"><strong>Rien à afficher.</strong><p>Ajoute une question ou sélectionne une notion du parcours pour commencer.</p></div>';
+ <article class="rev-item" data-id="${esc(x.id)}"><div class="rev-item-main"><div class="rev-item-meta"><span class="rev-type">${esc(x.type)}</span><span class="rev-small">${COURSE_REGISTRY.length>1&&x.courseTitle?esc(x.courseTitle)+" · ":""}${esc(x.lessonTitle||"Cours")}</span></div><h3>${esc(x.topicTitle||"Notion à préciser")}</h3><p>${esc((x.description||"").split("\n")[0])}</p><div class="rev-item-bottom"><span class="rev-status ${statColor[x.status]||statColor["a-comprendre"]}">${statuts[x.status]||statuts["a-comprendre"]}</span><span class="rev-small">${date(x.updatedAt||x.createdAt)}</span></div></div><button class="rev-open" data-open="${esc(x.id)}" aria-label="Ouvrir la fiche">Ouvrir →</button></article>`).join(""):'<div class="rev-empty"><strong>Rien à afficher.</strong><p>Ajoute une question ou sélectionne une notion du parcours pour commencer.</p></div>';
  document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>detail(b.dataset.open)));
  }
  function renderCourses(){
- document.getElementById("course-list").innerHTML=courses.map(c=>`<details class="course-row"><summary><span class="course-number">01</span><span>${esc(c.title)}</span><span class="course-chevron">⌄</span></summary><div class="course-topics">${c.lessons.map(l=>`<details class="course-row"><summary><span class="course-number">${String(l.id).padStart(2,"0")}</span><span>${esc(l.titre)}</span></summary><div class="course-topics">${l.topics.map(t=>`<button data-topic-course="${esc(c.id)}" data-topic-lesson="${l.id}" data-topic="${esc(t.titre)}">${esc(t.titre)}</button>`).join("")}</div></details>`).join("")}</div></details>`).join("");
+ document.getElementById("course-list").innerHTML=courses.map((c,ci)=>`<details class="course-row"><summary><span class="course-number">${String(ci+1).padStart(2,"0")}</span><span>${esc(c.title)}</span><span class="course-chevron">⌄</span></summary><div class="course-topics">${c.lessons.map(l=>`<details class="course-row"><summary><span class="course-number">${String(l.id).padStart(2,"0")}</span><span>${esc(l.titre)}</span></summary><div class="course-topics">${l.topics.map(t=>`<button data-topic-course="${esc(c.id)}" data-topic-lesson="${l.id}" data-topic="${esc(t.titre)}">${esc(t.titre)}</button>`).join("")}</div></details>`).join("")}</div></details>`).join("");
  document.querySelectorAll("[data-topic-lesson]").forEach(b=>b.addEventListener("click",()=>{document.getElementById("course-select").value=b.dataset.topicCourse;fillLessons();document.getElementById("lesson-select").value=b.dataset.topicLesson;fillTopics();document.getElementById("topic-select").value=b.dataset.topic;document.querySelector("#entry-form textarea").focus();window.scrollTo({top:document.getElementById("entry-form").offsetTop-90,behavior:"smooth"});}));
  }
  function fillLessons(){
@@ -142,7 +144,7 @@ function render(){
  const x=items.find(i=>i.id===id);if(!x)return;
  const modal=document.getElementById("detail-modal");
  modal.hidden=false;
- modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Les captures ajoutées dans « Ajouter une difficulté » sont jointes automatiquement à cette fiche et transmises à Claude. Tu n’as pas besoin de les importer une deuxième fois. Claude te proposera uniquement des questions ciblées ou des choix à sélectionner.</p><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">${(x.images||[]).length?"Analyse automatique de la capture en préparation…":"Ajoute une capture ou écris une question pour commencer."}</p></div><label class="tutor-question-label" for="tutor-question">Répondre à Claude (facultatif)<textarea id="tutor-question" rows="3" placeholder="Facultatif : ajoute une précision si les choix proposés ne suffisent pas…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Envoyer ma réponse</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
+ modal.innerHTML=`<div class="rev-dialog"><button class="modal-close" id="close-modal" aria-label="Fermer">×</button><p class="eyebrow">FICHE DE CONSOLIDATION</p><span class="rev-type">${esc(x.type)} · ${COURSE_REGISTRY.length>1&&x.courseTitle?esc(x.courseTitle)+" · ":""}Leçon ${x.lessonId||"—"}</span><h2>${esc(x.topicTitle||"Notion à revoir")}</h2><p class="detail-question">${esc(x.description||"")}</p><label>État d’acquisition<select id="detail-status">${Object.entries(statuts).map(([k,v])=>`<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}</select></label><section class="tutor-output"><p class="eyebrow">COMPRENDRE AVEC L’ASSISTANT</p><p class="rev-small">Les captures ajoutées dans « Ajouter une difficulté » sont jointes automatiquement à cette fiche et transmises à Claude. Tu n’as pas besoin de les importer une deuxième fois. Claude te proposera uniquement des questions ciblées ou des choix à sélectionner.</p><div id="saved-image-preview" class="image-preview"></div><div id="tutor-content" class="tutor-conversation"><p class="rev-small">${(x.images||[]).length?"Analyse automatique de la capture en préparation…":"Ajoute une capture ou écris une question pour commencer."}</p></div><label class="tutor-question-label" for="tutor-question">Répondre à Claude (facultatif)<textarea id="tutor-question" rows="3" placeholder="Facultatif : ajoute une précision si les choix proposés ne suffisent pas…"></textarea></label><button id="ask-ai" class="rev-btn primary full" ${ai.endpoint?"":"disabled"}>Envoyer ma réponse</button></section><div class="detail-actions"><button id="delete-item" class="rev-btn danger">Supprimer</button><button id="close-bottom" class="rev-btn secondary">Fermer</button></div></div>`;
  const savedPreview=document.getElementById("saved-image-preview");
  if((x.images||[]).length){
   savedPreview.innerHTML='<p class="rev-small">Captures déjà enregistrées avec cette difficulté :</p>'+x.images.map((src,i)=>'<img class="saved-exercise-image" src="'+src+'" alt="Capture enregistrée '+(i+1)+'">').join("");
