@@ -231,8 +231,8 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
       await ctx.close();
     }
 
-    // ---------- 7. Le petit robot
-    titre("Le petit robot");
+    // ---------- 7. Robotto, le petit robot
+    titre("Robotto, le petit robot");
     {
       const { ctx, p } = await ouvrir();
       const c = PREMIER;
@@ -252,8 +252,8 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
       };
       const passage = await selectionner();
       const boite = await p.locator(".robot-bouton").boundingBox().catch(() => null);
-      ok("Sélectionner un passage fait apparaître le robot", !!boite);
-      ok("Le robot se touche facilement (44 px au moins)", boite && boite.width >= 44 && boite.height >= 44);
+      ok("Sélectionner un passage fait apparaître Robotto", !!boite);
+      ok("Robotto se touche facilement (44 px au moins)", boite && boite.width >= 44 && boite.height >= 44);
       await p.locator(".robot-bouton").tap(); await attendre(p, 400);
       const fen = p.locator(".robot-fenetre");
       ok("Le toucher ouvre une fenêtre avec un message de bienvenue", (await fen.isVisible()) && ((await p.locator(".robot-de-robot").first().textContent()) || "").length > 10);
@@ -289,7 +289,7 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
       ok("Elle part avec les consignes de réponse", premier.includes("Réponds en une phrase."));
       ok("La réponse s’affiche", /numéro 1/.test((await p.locator(".robot-fenetre").textContent()) || ""));
       const petits = await petitesCibles(p);
-      ok("Fenêtre du robot : zones à toucher d’au moins 44 px", !petits.length, petits.slice(0, 3).join(", "));
+      ok("Fenêtre de Robotto : zones à toucher d’au moins 44 px", !petits.length, petits.slice(0, 3).join(", "));
       await p.locator(".robot-fenetre button[aria-label=Fermer]").tap(); await attendre(p, 200);
       await converser("Et la deuxième question ?");
       await p.locator(".robot-fenetre button[aria-label=Fermer]").tap(); await attendre(p, 200);

@@ -811,9 +811,9 @@ function Lexique() {
   );
 }
 
-/* ---------------------------------------------------------------- le petit robot */
+/* ---------------------------------------------------------------- Robotto, le petit robot */
 
-// Sélectionne un passage dans une leçon ou le lexique : le petit robot apparaît. Touche-le
+// Sélectionne un passage dans une leçon ou le lexique : Robotto apparaît. Touche-le
 // pour lui poser des questions sur ce passage. Il passe par le service IA réglé dans le carnet
 // de révision (aucune clé dans l’appli). Ses conversations restent sur l’appareil, page par page.
 // Le robot est un clin d’œil à la mascotte de Claude Code, redessiné ici : rien d’officiel.
@@ -827,7 +827,7 @@ const BIENVENUES = [
   "Hey, salut toi ! Qu’est-ce que tu veux savoir sur ce passage ?",
   "Bonjour ! Pose-moi ta question, je t’écoute.",
   "Coucou ! Un mot t’échappe ? On regarde ça ensemble.",
-  "Bip bip ! Petit robot au rapport. Qu’est-ce qui te turlupine ?",
+  "Bip bip ! Robotto au rapport. Qu’est-ce qui te turlupine ?",
   "Salut ! On décortique ce passage ensemble ?",
   "Hello ! Je suis tout ouïe. Vas-y, demande-moi.",
 ];
@@ -841,7 +841,7 @@ const TRIS = [
   { v: "anciennes", l: "Plus anciennes", f: (a, b) => a.creeLe - b.creeLe },
   { v: "longues", l: "Les plus longues", f: (a, b) => b.messages.length - a.messages.length || b.modifieLe - a.modifieLe },
 ];
-const CONSIGNE_ROBOT = "Tu es le petit robot de CL4UD3, une appli qui aide à suivre en français des cours sur Claude Code. "
+const CONSIGNE_ROBOT = "Tu t’appelles Robotto, le petit robot de CL4UD3, une appli qui aide à suivre en français des cours sur Claude Code. "
   + "L’apprenant te pose des questions sur un passage du cours qu’il a sélectionné. Réponds en français, en le tutoyant, "
   + "avec des phrases courtes et simples. Appuie-toi sur le passage et sur ce que tu sais de Claude Code. "
   + "Si tu n’es pas sûr d’une information, dis-le clairement : n’invente ni commande, ni libellé, ni adresse. "
@@ -938,7 +938,7 @@ async function demanderAuRobot(adresse, conv, consignes) {
   }
 }
 
-// Le petit robot en pixels (16 × 11). Les animations sont dans styles.css.
+// Robotto en pixels (16 × 11). Les animations sont dans styles.css.
 function RobotPixels({ taille = 40 }) {
   return (
     <svg className="robot-pixels" width={taille} height={Math.round(taille * 11 / 16)} viewBox="0 0 16 11"
@@ -1124,18 +1124,18 @@ function Robot({ route }) {
       {sel && sel.y > 0 && !ouvert && (
         <button type="button" className="robot-bouton" key={sel.n} style={{ left: sel.x + "px", top: sel.y + "px" }}
           onMouseDown={(e) => e.preventDefault()} onClick={ouvrirAvecSelection}
-          aria-label="Poser une question au petit robot sur le texte sélectionné">
+          aria-label="Poser une question à Robotto sur le texte sélectionné">
           <span className="robot robot-arrive"><RobotPixels taille={36} /></span>
         </button>
       )}
 
       {ouvert && (
-        <section className="robot-fenetre" role="dialog" aria-label="Le petit robot" tabIndex={-1} ref={fenetre}>
+        <section className="robot-fenetre" role="dialog" aria-label="Robotto" tabIndex={-1} ref={fenetre}>
           <header className="robot-tete">
-            <button type="button" className="robot-avatar" onClick={() => setHumeur(envoi ? "reflechit" : "joie")} aria-label="Faire sauter le petit robot">
+            <button type="button" className="robot-avatar" onClick={() => setHumeur(envoi ? "reflechit" : "joie")} aria-label="Faire sauter Robotto">
               <span className={"robot robot-" + humeur} key={conv ? conv.id : "liste"}><RobotPixels taille={44} /></span>
             </button>
-            <p className="robot-nom">{vue === "liste" ? "Conversations" : "Le petit robot"}</p>
+            <p className="robot-nom">{vue === "liste" ? "Conversations" : "Robotto"}</p>
             <button type="button" className={"bouton-icone robot-consignes-bouton" + (voirConsignes ? " actif" : "")} aria-pressed={voirConsignes}
               aria-label="Ma façon de répondre" onClick={() => { setBrouillon(reglages.consignes || ""); setVoirConsignes((v) => !v); }}>
               <IcReglages taille={20} />
@@ -1149,7 +1149,7 @@ function Robot({ route }) {
           {voirConsignes && (
             <div className="robot-consignes">
               <label htmlFor="robot-consignes">Ma façon de répondre</label>
-              <p className="robot-aide">{fr("Le robot suit ces consignes dans toutes ses réponses. Elles restent sur cet appareil.")}</p>
+              <p className="robot-aide">{fr("Robotto suit ces consignes dans toutes ses réponses. Elles restent sur cet appareil.")}</p>
               <textarea id="robot-consignes" rows={3} value={brouillon} onChange={(e) => setBrouillon(e.target.value)}
                 placeholder="Par exemple : réponds en trois phrases, avec un exemple concret." />
               <div className="robot-ligne">
@@ -1181,7 +1181,7 @@ function Robot({ route }) {
                     {m.role === "user" ? <p>{m.t}</p> : <TexteRobot t={m.t} />}
                   </div>
                 ))}
-                {envoi && <div className="robot-bulle robot-de-robot robot-attente" role="status" aria-label="Le robot réfléchit"><i /><i /><i /></div>}
+                {envoi && <div className="robot-attente" role="status" aria-label="Robotto réfléchit"><i /><i /><i /></div>}
                 {erreur && <p className="robot-erreur" role="alert">{fr(erreur)}</p>}
               </div>
               {service && (
@@ -1193,7 +1193,7 @@ function Robot({ route }) {
                   </div>
                   <div className="robot-ligne">
                     <textarea rows={1} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ta question…"
-                      aria-label="Ta question au robot"
+                      aria-label="Ta question à Robotto"
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); envoyer(question); } }} />
                     <button type="submit" className="bouton bouton-principal robot-envoyer" disabled={envoi || !question.trim()} aria-label="Envoyer">
                       <IcEnvoyer taille={20} />
@@ -1207,7 +1207,7 @@ function Robot({ route }) {
           {(vue === "liste" || !conv) && (
             <div className="robot-fil robot-liste" ref={fil}>
               {!liste.length
-                ? <p className="robot-aide">{fr("Aucune conversation sur cette page pour l’instant. Sélectionne un passage, puis touche le robot.")}</p>
+                ? <p className="robot-aide">{fr("Aucune conversation sur cette page pour l’instant. Sélectionne un passage, puis touche Robotto.")}</p>
                 : (
                   <>
                     <label className="robot-tri">
