@@ -2,6 +2,8 @@
 
 CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Cours : **Claude Code 101**, puis **Claude Code en action**. Chaque cours a ses leçons, ses exercices sur claude.ai/code et son quiz final d’une question à la fois ; le lexique est commun. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
 
+**Robotto, le petit robot** : dans une leçon ou le lexique, sélectionne un passage, puis touche Robotto quand il apparaît. Il répond à tes questions sur ce passage, en suivant tes consignes (« Ma façon de répondre »). Les conversations de chaque page se retrouvent avec le bouton « Conversations », se trient et se suppriment ; elles restent sur l’appareil. Pour qu’il réponde, il faut connecter une IA une fois, dans le carnet de révision (panneau « Assistant intelligent ») : l’adresse HTTPS d’un service à toi, qui garde la clé secrète. Aucune clé n’est jamais placée dans l’appli.
+
 Parcours non officiel, rédigé par Claude à partir des cours publics Claude Code 101 et Claude Code en action (Claude Academy) et de la documentation officielle de Claude Code en français.
 
 ## Mettre l’appli en ligne depuis l’iPad
@@ -55,6 +57,7 @@ Après chaque import, les tests de `node tests/tout.mjs` doivent passer : la vé
 
 - Interface construite à partir de composants de [21st.dev](https://21st.dev), adaptés : « Vertical Descriptive Stepper » (sean0205) pour le parcours, « Questionnaire » (uiable) pour le quiz, et le thème « Amber Vivid_1 » (sriyanshintern) pour la couleur d’accent.
 - Icônes : tracés de [Lucide](https://lucide.dev) (licence ISC).
+- Robotto, le petit robot : un clin d’œil à la mascotte de Claude Code, redessiné en pixels pour CL4UD3. Ce n’est pas un élément officiel d’Anthropic.
 - [React](https://react.dev) (licence MIT).
 - Polices : Bricolage Grotesque et Atkinson Hyperlegible, via Google Fonts.
 - Pour les badges officiels, il faut passer le quiz de chaque cours sur academy.claude.com : [Claude Code 101](https://academy.claude.com/fr/courses/claude-code-101), [Claude Code en action](https://academy.claude.com/fr/courses/claude-code-in-action).

@@ -153,6 +153,12 @@ const IcLoupe = (p) => <Icone {...p}><circle cx="11" cy="11" r="8" /><path d="m2
 const IcRelancer = (p) => <Icone {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></Icone>;
 const IcDrapeau = (p) => <Icone {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><path d="M4 22v-7" /></Icone>;
 const IcLivre = (p) => <Icone {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></Icone>;
+const IcListe = (p) => <Icone {...p}><path d="M3 6h.01" /><path d="M3 12h.01" /><path d="M3 18h.01" /><path d="M8 6h13" /><path d="M8 12h13" /><path d="M8 18h13" /></Icone>;
+const IcCorbeille = (p) => <Icone {...p}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></Icone>;
+const IcReglages = (p) => <Icone {...p}><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></Icone>;
+const IcEnvoyer = (p) => <Icone {...p}><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></Icone>;
+const IcPlus = (p) => <Icone {...p}><path d="M5 12h14" /><path d="M12 5v14" /></Icone>;
+const IcBulle = (p) => <Icone {...p}><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></Icone>;
 
 /* ---------------------------------------------------------------- petits composants */
 
@@ -583,6 +589,7 @@ function Lecon({ cours: c, id, etat, setEtat, toast }) {
       <div className="lecon-haut">
         <a href="#" className="retour"><IcGauche taille={18} />Parcours</a>
         <span className="lecon-section">{PLUSIEURS ? `${c.titre} · ${c.SECTIONS[l.section]}` : c.SECTIONS[l.section]}</span>
+        <BoutonConversations page={`${c.id}/lecon-${id}`} />
       </div>
       <Pastilles c={c} id={id} faites={faites} />
       <h1>{l.titre}</h1>
@@ -787,7 +794,7 @@ function Lexique() {
   }, [filtre]);
   return (
     <article className="page lexique">
-      <div className="lecon-haut"><a href="#" className="retour"><IcGauche taille={18} />Parcours</a></div>
+      <div className="lecon-haut"><a href="#" className="retour"><IcGauche taille={18} />Parcours</a><BoutonConversations page="lexique" /></div>
       <h1>Lexique</h1>
       <p className="chapo">Les mots du parcours, expliqués simplement.</p>
       <label className="recherche">
@@ -801,6 +808,443 @@ function Lexique() {
             <div key={m} className="lexique-entree"><dt>{m}</dt><dd>{fr(d)}</dd></div>
           ))}</dl>}
     </article>
+  );
+}
+
+/* ---------------------------------------------------------------- Robotto, le petit robot */
+
+// Sélectionne un passage dans une leçon ou le lexique : Robotto apparaît. Touche-le
+// pour lui poser des questions sur ce passage. Il passe par le service IA réglé dans le carnet
+// de révision (aucune clé dans l’appli). Ses conversations restent sur l’appareil, page par page.
+// Le robot est un clin d’œil à la mascotte de Claude Code, redessiné ici : rien d’officiel.
+
+const CLE_ROBOT = "cc101fr:robot:v1";                       // { consignes, tri }
+const CLE_CONVERSATIONS = "cc101fr:robot-conversations:v1"; // liste des conversations
+const CLE_SERVICE_IA = "cc101fr:revision-ai:v1";            // réglée dans le carnet de révision
+const MAX_PAR_PAGE = 30;
+
+const BIENVENUES = [
+  "Hey, salut toi ! Qu’est-ce que tu veux savoir sur ce passage ?",
+  "Bonjour ! Pose-moi ta question, je t’écoute.",
+  "Coucou ! Un mot t’échappe ? On regarde ça ensemble.",
+  "Bip bip ! Robotto au rapport. Qu’est-ce qui te turlupine ?",
+  "Salut ! On décortique ce passage ensemble ?",
+  "Hello ! Je suis tout ouïe. Vas-y, demande-moi.",
+];
+const RAPIDES = [
+  { l: "Plus simple", q: "Explique-le-moi plus simplement, comme à un débutant." },
+  { l: "Un exemple", q: "Donne-moi un exemple concret." },
+  { l: "Plus court", q: "Résume-le en deux phrases." },
+];
+const TRIS = [
+  { v: "recentes", l: "Plus récentes", f: (a, b) => b.modifieLe - a.modifieLe },
+  { v: "anciennes", l: "Plus anciennes", f: (a, b) => a.creeLe - b.creeLe },
+  { v: "longues", l: "Les plus longues", f: (a, b) => b.messages.length - a.messages.length || b.modifieLe - a.modifieLe },
+];
+const CONSIGNE_ROBOT = "Tu t’appelles Robotto, le petit robot de CL4UD3, une appli qui aide à suivre en français des cours sur Claude Code. "
+  + "L’apprenant te pose des questions sur un passage du cours qu’il a sélectionné. Réponds en français, en le tutoyant, "
+  + "avec des phrases courtes et simples. Appuie-toi sur le passage et sur ce que tu sais de Claude Code. "
+  + "Si tu n’es pas sûr d’une information, dis-le clairement : n’invente ni commande, ni libellé, ni adresse. "
+  + "Mise en forme possible : **gras**, `code`, une ligne vide entre deux paragraphes. Pas d’autre Markdown.";
+
+function lireJson(cle, defaut) {
+  try { const v = JSON.parse(localStorage.getItem(cle) || "null"); return v == null ? defaut : v; } catch (e) { return defaut; }
+}
+function ecrireJson(cle, v) {
+  try { localStorage.setItem(cle, JSON.stringify(v)); return true; } catch (e) { return false; }
+}
+
+// Petit relais entre composants : la liste des conversations a changé, ou il faut l’ouvrir.
+const relaisRobot = new EventTarget();
+function lireConversations() {
+  const l = lireJson(CLE_CONVERSATIONS, []);
+  return Array.isArray(l) ? l : [];
+}
+function ecrireConversations(liste) {
+  let l = liste;
+  // Stockage plein : on retire les plus anciennes conversations jusqu’à ce que ça tienne.
+  while (!ecrireJson(CLE_CONVERSATIONS, l) && l.length) {
+    const ancienne = l.reduce((a, b) => (a.modifieLe <= b.modifieLe ? a : b));
+    l = l.filter((x) => x !== ancienne);
+  }
+  relaisRobot.dispatchEvent(new Event("conversations"));
+}
+function enregistrerConversation(conv) {
+  const autres = lireConversations().filter((x) => x.id !== conv.id);
+  const page = [conv, ...autres.filter((x) => x.page === conv.page)]
+    .sort((a, b) => b.modifieLe - a.modifieLe).slice(0, MAX_PAR_PAGE);
+  ecrireConversations([...page, ...autres.filter((x) => x.page !== conv.page)]);
+}
+function supprimerConversations(filtre) {
+  ecrireConversations(lireConversations().filter((x) => !filtre(x)));
+}
+function useConversations(page) {
+  const lire = () => (page ? lireConversations().filter((x) => x.page === page) : []);
+  const [liste, setListe] = useState(lire);
+  useEffect(() => {
+    const f = () => setListe(lire());
+    f();
+    relaisRobot.addEventListener("conversations", f);
+    return () => relaisRobot.removeEventListener("conversations", f);
+  }, [page]);
+  return liste;
+}
+
+function pageDuRobot(route) {
+  if (route.vue === "lecon") return { cle: `${route.cours.id}/lecon-${route.id}`, cours: route.cours.titre, titre: `Leçon ${route.id} : ${route.cours.LECONS[route.id - 1].titre}` };
+  if (route.vue === "lexique") return { cle: "lexique", cours: "Lexique commun à tous les cours", titre: "Lexique" };
+  return null;
+}
+const titreConversation = (x) => {
+  const q = (x.messages.find((m) => m.role === "user") || {}).t || "Conversation sans question";
+  return q.length > 80 ? q.slice(0, 79) + "…" : q;
+};
+const DATE_ROBOT = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+async function demanderAuRobot(adresse, conv, consignes) {
+  const contexte = [CONSIGNE_ROBOT, `Cours : ${conv.cours}`, `Page : ${conv.pageTitre}`,
+    conv.extrait ? `Passage sélectionné :\n« ${conv.extrait} »` : "Pas de passage sélectionné : la question porte sur la page en général."].join("\n\n");
+  const n = conv.messages.length;
+  const messages = conv.messages.map((m, i) => {
+    let t = m.t;
+    if (i === 0) t = contexte + "\n\nMa question : " + t;
+    if (i === n - 1 && consignes) t += "\n\nMes consignes sur ta façon de répondre, à suivre en priorité : " + consignes;
+    return { role: m.role, content: t };
+  });
+  const ctrl = new AbortController();
+  const minuteur = setTimeout(() => ctrl.abort(), 30000);
+  try {
+    let rep;
+    try {
+      rep = await fetch(adresse, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages }), signal: ctrl.signal });
+    } catch (e) {
+      throw Error(e.name === "AbortError" ? "Le service IA met plus de 30 secondes à répondre. Réessaie dans un moment."
+        : "Je n’arrive pas à joindre le service IA. Vérifie ta connexion à Internet, puis réessaie.");
+    }
+    let d;
+    try { d = await rep.json(); } catch (e) { throw Error("La réponse du service IA est illisible."); }
+    if (!rep.ok) {
+      const motif = (d.error && (d.error.message || d.error)) || d.message || "erreur " + rep.status;
+      throw Error("Le service IA a refusé la demande : " + String(motif));
+    }
+    const t = typeof d.answer === "string" ? d.answer
+      : typeof d.content === "string" ? d.content
+      : Array.isArray(d.content) ? d.content.filter((x) => x && x.type === "text").map((x) => x.text).join("\n\n")
+      : d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    if (typeof t !== "string" || !t.trim()) throw Error("Le service IA n’a pas renvoyé de réponse.");
+    return t.trim();
+  } finally {
+    clearTimeout(minuteur);
+  }
+}
+
+// Robotto en pixels (16 × 11). Les animations sont dans styles.css.
+function RobotPixels({ taille = 40 }) {
+  return (
+    <svg className="robot-pixels" width={taille} height={Math.round(taille * 11 / 16)} viewBox="0 0 16 11"
+      shapeRendering="crispEdges" aria-hidden="true">
+      <g className="robot-pattes-a"><rect x="4" y="8" width="1" height="3" /><rect x="9" y="8" width="1" height="3" /></g>
+      <g className="robot-pattes-b"><rect x="6" y="8" width="1" height="3" /><rect x="11" y="8" width="1" height="3" /></g>
+      <g className="robot-corps">
+        <rect x="3" y="1" width="10" height="7" />
+        <rect x="1" y="4" width="2" height="2" />
+        <rect x="13" y="4" width="2" height="2" />
+      </g>
+      <g className="robot-regard"><g className="robot-yeux">
+        <rect x="5" y="3" width="1" height="2" /><rect x="10" y="3" width="1" height="2" />
+      </g></g>
+    </svg>
+  );
+}
+
+// Réponse du robot : paragraphes, **gras**, `code` et blocs de code.
+function TexteRobot({ t }) {
+  return (
+    <>
+      {t.split("```").map((m, i) => (i % 2
+        ? <pre key={i} className="robot-code"><code>{m.replace(/^[\w-]*\n/, "").replace(/\n$/, "")}</code></pre>
+        : m.split(/\n{2,}/).filter((x) => x.trim()).map((x, j) => <p key={i + "-" + j}><Texte t={x.trim()} /></p>)))}
+    </>
+  );
+}
+
+// Dans l’en-tête d’une page : rouvre les conversations déjà tenues ici.
+function BoutonConversations({ page }) {
+  const n = useConversations(page).length;
+  if (!n) return null;
+  return (
+    <button type="button" className="bouton-conversations" onClick={() => relaisRobot.dispatchEvent(new Event("ouvrir-liste"))}>
+      <IcBulle taille={17} />Conversations ({n})
+    </button>
+  );
+}
+
+function Robot({ route }) {
+  const page = pageDuRobot(route);
+  const cle = page ? page.cle : null;
+  const liste = useConversations(cle);
+  const [sel, setSel] = useState(null);          // { texte, x, y, n } : passage sélectionné
+  const [ouvert, setOuvert] = useState(false);
+  const [vue, setVue] = useState("chat");        // « chat » ou « liste »
+  const [conv, setConv] = useState(null);
+  const [humeur, setHumeur] = useState("arrive"); // arrive, repos, reflechit, joie
+  const [question, setQuestion] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
+  const [service, setService] = useState("");
+  const [reglages, setReglages] = useState(() => ({ consignes: "", tri: "recentes", ...lireJson(CLE_ROBOT, {}) }));
+  const [voirConsignes, setVoirConsignes] = useState(false);
+  const [brouillon, setBrouillon] = useState(reglages.consignes);
+  const plage = useRef(null), attente = useRef(null), fil = useRef(null), fenetre = useRef(null);
+
+  const majReglages = (p) => setReglages((r) => { const n = { ...r, ...p }; ecrireJson(CLE_ROBOT, n); return n; });
+  const lireService = () => setService(String((lireJson(CLE_SERVICE_IA, {}) || {}).endpoint || ""));
+
+  // Suivre la sélection : le robot se place juste sous le passage (le menu de l’iPad est au-dessus).
+  useEffect(() => {
+    if (!cle) { setSel(null); return; }
+    const placer = () => {
+      const r = plage.current;
+      if (!r) return;
+      const rects = r.getClientRects();
+      const b = rects.length ? rects[rects.length - 1] : r.getBoundingClientRect();
+      const t = 52, marge = 12;
+      const x = Math.min(Math.max(b.right - t / 2, marge), window.innerWidth - t - marge);
+      let y = b.bottom + 10;
+      if (y + t > window.innerHeight - marge) y = Math.max(b.top - t - 10, marge);
+      setSel((s) => s && { ...s, x, y });
+    };
+    const lire = () => {
+      const s = document.getSelection();
+      const texte = s && s.rangeCount ? s.toString().replace(/\s+/g, " ").trim() : "";
+      const r = texte.length >= 2 ? s.getRangeAt(0) : null;
+      const n = r && r.commonAncestorContainer;
+      const el = n && (n.nodeType === 1 ? n : n.parentElement);
+      if (!el || !el.closest("main .page") || el.closest("input, textarea, .robot-fenetre")) {
+        plage.current = null; setSel(null); return;
+      }
+      plage.current = r;
+      setSel((avant) => ({ texte: texte.slice(0, 1500), x: 0, y: 0, n: avant ? avant.n : Date.now() }));
+      placer();
+    };
+    const auChangement = () => { clearTimeout(attente.current); attente.current = setTimeout(lire, 300); };
+    const auDefilement = () => requestAnimationFrame(placer);
+    document.addEventListener("selectionchange", auChangement);
+    window.addEventListener("scroll", auDefilement, { passive: true });
+    window.addEventListener("resize", auDefilement);
+    return () => {
+      clearTimeout(attente.current);
+      document.removeEventListener("selectionchange", auChangement);
+      window.removeEventListener("scroll", auDefilement);
+      window.removeEventListener("resize", auDefilement);
+    };
+  }, [cle]);
+
+  // Changer de page ferme la fenêtre.
+  useEffect(() => { setOuvert(false); setConv(null); setVoirConsignes(false); }, [cle]);
+
+  // Ouvrir la liste depuis le bouton « Conversations » de la page.
+  useEffect(() => {
+    const f = () => { lireService(); setVue("liste"); setOuvert(true); };
+    relaisRobot.addEventListener("ouvrir-liste", f);
+    return () => relaisRobot.removeEventListener("ouvrir-liste", f);
+  }, []);
+
+  // Après un saut, le robot se repose.
+  useEffect(() => {
+    if (humeur !== "arrive" && humeur !== "joie") return;
+    const m = setTimeout(() => setHumeur((h) => (h === humeur ? "repos" : h)), 1000);
+    return () => clearTimeout(m);
+  }, [humeur, conv && conv.id]);
+
+  useEffect(() => {
+    if (!ouvert) return;
+    if (fenetre.current) fenetre.current.focus({ preventScroll: true });
+    const f = (e) => { if (e.key === "Escape") setOuvert(false); };
+    window.addEventListener("keydown", f);
+    return () => window.removeEventListener("keydown", f);
+  }, [ouvert]);
+
+  useEffect(() => { if (fil.current) fil.current.scrollTop = fil.current.scrollHeight; }, [conv, envoi, erreur, ouvert, vue, service]);
+
+  if (!page) return null;
+
+  const nouvelle = (extrait) => {
+    lireService();
+    setConv({
+      id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), page: cle, cours: page.cours, pageTitre: page.titre,
+      extrait: extrait || "", creeLe: Date.now(), modifieLe: Date.now(),
+      bienvenue: BIENVENUES[Math.floor(Math.random() * BIENVENUES.length)], messages: [],
+    });
+    setVue("chat"); setOuvert(true); setHumeur("arrive"); setErreur(""); setQuestion("");
+  };
+  const ouvrirAvecSelection = () => {
+    if (!sel) return;
+    nouvelle(sel.texte);
+    plage.current = null; setSel(null);
+    try { document.getSelection().removeAllRanges(); } catch (e) {}
+  };
+  const rouvrir = (x) => { lireService(); setConv(x); setVue("chat"); setErreur(""); setQuestion(""); setHumeur("arrive"); };
+
+  const envoyer = async (texte) => {
+    const q = texte.trim();
+    if (!q || envoi || !conv || !service) return;
+    const c1 = { ...conv, modifieLe: Date.now(), messages: [...conv.messages, { role: "user", t: q }] };
+    const meme = (f) => setConv((c) => (c && c.id === c1.id ? f(c) : c));
+    setConv(c1); setQuestion(""); setErreur(""); setEnvoi(true); setHumeur("reflechit");
+    try {
+      const reponse = await demanderAuRobot(service, c1, (reglages.consignes || "").trim());
+      const c2 = { ...c1, modifieLe: Date.now(), messages: [...c1.messages, { role: "assistant", t: reponse }] };
+      enregistrerConversation(c2);
+      meme(() => c2); setHumeur("joie");
+    } catch (e) {
+      meme(() => conv); setQuestion((v) => v || q); setErreur(e.message); setHumeur("repos");
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
+  const supprimer = (x) => {
+    if (!window.confirm(`Supprimer la conversation « ${titreConversation(x)} » ?`)) return;
+    supprimerConversations((y) => y.id === x.id);
+    if (conv && conv.id === x.id) setConv(null);
+  };
+  const toutSupprimer = () => {
+    if (!window.confirm("Supprimer toutes les conversations de cette page ?")) return;
+    supprimerConversations((y) => y.page === cle);
+    setConv(null);
+  };
+
+  const tri = TRIS.find((t) => t.v === reglages.tri) || TRIS[0];
+  const triees = [...liste].sort(tri.f);
+  const consignesEnregistrees = brouillon.trim() === (reglages.consignes || "");
+
+  return (
+    <>
+      {sel && sel.y > 0 && !ouvert && (
+        <button type="button" className="robot-bouton" key={sel.n} style={{ left: sel.x + "px", top: sel.y + "px" }}
+          onMouseDown={(e) => e.preventDefault()} onClick={ouvrirAvecSelection}
+          aria-label="Poser une question à Robotto sur le texte sélectionné">
+          <span className="robot robot-arrive"><RobotPixels taille={36} /></span>
+        </button>
+      )}
+
+      {ouvert && (
+        <section className="robot-fenetre" role="dialog" aria-label="Robotto" tabIndex={-1} ref={fenetre}>
+          <header className="robot-tete">
+            <button type="button" className="robot-avatar" onClick={() => setHumeur(envoi ? "reflechit" : "joie")} aria-label="Faire sauter Robotto">
+              <span className={"robot robot-" + humeur} key={conv ? conv.id : "liste"}><RobotPixels taille={44} /></span>
+            </button>
+            <p className="robot-nom">{vue === "liste" ? "Conversations" : "Robotto"}</p>
+            <button type="button" className={"bouton-icone robot-consignes-bouton" + (voirConsignes ? " actif" : "")} aria-pressed={voirConsignes}
+              aria-label="Ma façon de répondre" onClick={() => { setBrouillon(reglages.consignes || ""); setVoirConsignes((v) => !v); }}>
+              <IcReglages taille={20} />
+            </button>
+            {vue === "chat"
+              ? <button type="button" className="bouton-icone robot-liste-bouton" aria-label="Conversations de cette page" onClick={() => setVue("liste")}><IcListe taille={20} /></button>
+              : conv && <button type="button" className="bouton-icone robot-retour-bouton" aria-label="Revenir à la conversation" onClick={() => setVue("chat")}><IcBulle taille={20} /></button>}
+            <button type="button" className="bouton-icone" aria-label="Fermer" onClick={() => setOuvert(false)}><IcX taille={20} /></button>
+          </header>
+
+          {voirConsignes && (
+            <div className="robot-consignes">
+              <label htmlFor="robot-consignes">Ma façon de répondre</label>
+              <p className="robot-aide">{fr("Robotto suit ces consignes dans toutes ses réponses. Elles restent sur cet appareil.")}</p>
+              <textarea id="robot-consignes" rows={3} value={brouillon} onChange={(e) => setBrouillon(e.target.value)}
+                placeholder="Par exemple : réponds en trois phrases, avec un exemple concret." />
+              <div className="robot-ligne">
+                <button type="button" className="bouton bouton-principal" disabled={consignesEnregistrees}
+                  onClick={() => majReglages({ consignes: brouillon.trim() })}>
+                  {consignesEnregistrees && reglages.consignes ? "Enregistré" : "Enregistrer"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {vue === "chat" && conv && (
+            <>
+              <div className="robot-fil" ref={fil} aria-live="polite">
+                <div className="robot-bulle robot-de-robot"><p>{fr(conv.bienvenue)}</p></div>
+                {!service && (
+                  <div className="robot-bulle robot-de-robot robot-connexion">
+                    <p>{fr("Pour te répondre, j’ai besoin d’être connecté à une IA. Ça se règle une seule fois, dans le carnet de révision :")}</p>
+                    <ol>
+                      <li>{fr("ouvre le panneau « Assistant intelligent » ;")}</li>
+                      <li>{fr("colle l’adresse HTTPS de ton service IA, le petit serveur qui garde ta clé à l’abri ;")}</li>
+                      <li>{fr("touche « Enregistrer et tester la connexion », puis reviens ici.")}</li>
+                    </ol>
+                    <a className="bouton bouton-principal" href="revisions.html">Connecter une IA</a>
+                  </div>
+                )}
+                {conv.messages.map((m, i) => (
+                  <div key={i} className={"robot-bulle " + (m.role === "user" ? "robot-de-moi" : "robot-de-robot")}>
+                    {m.role === "user" ? <p>{m.t}</p> : <TexteRobot t={m.t} />}
+                  </div>
+                ))}
+                {envoi && <div className="robot-attente" role="status" aria-label="Robotto réfléchit"><i /><i /><i /></div>}
+                {erreur && <p className="robot-erreur" role="alert">{fr(erreur)}</p>}
+              </div>
+              {service && (
+                <form className="robot-saisie" onSubmit={(e) => { e.preventDefault(); envoyer(question); }}>
+                  <div className="robot-rapides">
+                    {RAPIDES.map((r) => (
+                      <button type="button" key={r.l} className="robot-rapide" disabled={envoi} onClick={() => envoyer(r.q)}>{r.l}</button>
+                    ))}
+                  </div>
+                  <div className="robot-ligne">
+                    <textarea rows={1} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ta question…"
+                      aria-label="Ta question à Robotto"
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); envoyer(question); } }} />
+                    <button type="submit" className="bouton bouton-principal robot-envoyer" disabled={envoi || !question.trim()} aria-label="Envoyer">
+                      <IcEnvoyer taille={20} />
+                    </button>
+                  </div>
+                </form>
+              )}
+            </>
+          )}
+
+          {(vue === "liste" || !conv) && (
+            <div className="robot-fil robot-liste" ref={fil}>
+              {!liste.length
+                ? <p className="robot-aide">{fr("Aucune conversation sur cette page pour l’instant. Sélectionne un passage, puis touche Robotto.")}</p>
+                : (
+                  <>
+                    <label className="robot-tri">
+                      <span>Trier</span>
+                      <select value={tri.v} onChange={(e) => majReglages({ tri: e.target.value })}>
+                        {TRIS.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
+                      </select>
+                    </label>
+                    <ul>
+                      {triees.map((x) => {
+                        const nq = x.messages.filter((m) => m.role === "user").length;
+                        return (
+                          <li key={x.id} className="robot-conv">
+                            <button type="button" className="robot-conv-ouvrir" onClick={() => rouvrir(x)}>
+                              <strong>{titreConversation(x)}</strong>
+                              <span>{DATE_ROBOT.format(new Date(x.modifieLe))} · {nq} question{nq > 1 ? "s" : ""}</span>
+                            </button>
+                            <button type="button" className="bouton-icone robot-conv-supprimer" onClick={() => supprimer(x)}
+                              aria-label={`Supprimer la conversation « ${titreConversation(x)} »`}>
+                              <IcCorbeille taille={19} />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {liste.length >= MAX_PAR_PAGE && <p className="robot-aide">Seules les {MAX_PAR_PAGE} conversations les plus récentes de la page sont gardées.</p>}
+                  </>
+                )}
+              <div className="robot-actions">
+                <button type="button" className="bouton bouton-principal" onClick={() => nouvelle("")}><IcPlus taille={18} />Nouvelle conversation</button>
+                {liste.length > 0 && <button type="button" className="bouton bouton-contour robot-tout-supprimer" onClick={toutSupprimer}><IcCorbeille taille={18} />Tout supprimer</button>}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+    </>
   );
 }
 
@@ -849,6 +1293,7 @@ function App() {
       <div className="toast-zone" aria-live="polite">
         {message && <div className="toast" key={message.k}><IcCheck taille={18} strokeWidth="3" />{message.t}</div>}
       </div>
+      <Robot route={route} />
     </>
   );
 }
