@@ -21,7 +21,7 @@ const REPONSE_PRETOOLUSE = `{
   }
 }`;
 
-const PLUGIN_ARBRE = `plugin-labo/
+const PLUGIN_ARBRE = `plugin-appli-test/
 ├── .claude-plugin/plugin.json   le manifeste
 ├── agents/relecteur.md
 ├── skills/journal/SKILL.md
@@ -30,9 +30,9 @@ const PLUGIN_ARBRE = `plugin-labo/
 └── .mcp.json`;
 
 const PLUGIN_MANIFESTE = `{
-  "name": "plugin-labo",
+  "name": "plugin-appli-test",
   "version": "0.1.0",
-  "description": "Relecteur, journal et vérifications du labo"
+  "description": "Relecteur, journal et vérifications du projet d’appli test"
 }`;
 
 const ACTION_GITHUB = `- uses: anthropics/claude-code-action@v1
@@ -52,7 +52,7 @@ export const LECONS = [
       "Laisser Claude avancer seul jusqu’à un objectif vérifiable",
     ],
     blocs: [
-      { type: "p", t: "Tu as fini Claude Code 101 : tu sais confier une tâche, choisir le mode, relire le diff et fusionner. Ton labo a son CLAUDE.md, un sous-agent, des skills, un serveur MCP et des hooks. Ce cours t’apprend à confier des tâches plus longues, avec moins de surveillance, sans perdre confiance dans le résultat." },
+      { type: "p", t: "Tu as fini Claude Code 101 : tu sais confier une tâche, choisir le mode, relire le diff et fusionner. Ton projet d’appli test a son CLAUDE.md, un sous-agent, des skills, un serveur MCP et des hooks. Ce cours t’apprend à confier des tâches plus longues, avec moins de surveillance, sans perdre confiance dans le résultat." },
       { type: "p", t: "Une tâche courte se vérifie d’un coup d’œil. Une tâche longue (refaire dix fichiers, construire une fonctionnalité entière) dérape plus facilement, et plus tu corriges en route, plus elle s’éternise. Deux habitudes changent tout : cadrer le travail avant que Claude commence, puis le piloter pendant qu’il avance." },
       { type: "h2", t: "Cadrer d’abord, avec le mode Plan" },
       { type: "p", t: "Tu connais le mode Plan (Claude Code 101, leçon 5) : Claude lit le code et propose un plan, sans rien modifier. Pour une longue tâche, lis vraiment ce plan, ligne par ligne. Ce qui manque, demande-le tout de suite : corriger un plan coûte bien moins cher que réparer après coup." },
@@ -144,7 +144,7 @@ export const LECONS = [
       "Chaque erreur de Claude est une occasion de corriger CLAUDE.md.",
     ],
     exercice: {
-      intro: "Tu vas faire relire le CLAUDE.md de ton labo, écrit à la leçon 8 de Claude Code 101, avec les critères de cette leçon.",
+      intro: "Tu vas faire relire le CLAUDE.md de ton projet d’appli test, écrit à la leçon 8 de Claude Code 101, avec les critères de cette leçon.",
       etapes: [
         { t: "Nouvelle session, en mode **Plan** :", p: "Relis CLAUDE.md. Pour chaque règle, dis si elle est précise et vérifiable, si une interdiction dit quoi faire à la place, et si c’est une règle sans aucune exception qui serait mieux dans un hook. Propose une version réécrite plus courte, en gardant toutes nos règles : la commande de test, l’interface en français, pas de bibliothèque externe, les montants comme 12,50 €, et la clé du localStorage à ne jamais changer. Ne modifie rien." },
         { t: "Lis les propositions. Si Claude conseille de transformer une règle en hook, note-le : tu écriras des hooks à la leçon 5. Pour l’instant :", p: "Applique ta version réécrite de CLAUDE.md, sans créer de hook. Montre-moi l’ancien et le nouveau nombre de lignes." },
@@ -273,7 +273,7 @@ export const LECONS = [
       "Imposer les tests avant la fin d’un tour",
     ],
     blocs: [
-      { type: "p", t: "Tu sais qu’un hook transforme « Claude le fait en général » en « Claude ne peut pas l’éviter » (Claude Code 101, leçon 12). Pendant une longue session que tu ne surveilles pas, « en général » ne suffit plus. Cette leçon va plus loin : les bons événements, les codes de sortie, et deux hooks que tu vas ajouter au labo." },
+      { type: "p", t: "Tu sais qu’un hook transforme « Claude le fait en général » en « Claude ne peut pas l’éviter » (Claude Code 101, leçon 12). Pendant une longue session que tu ne surveilles pas, « en général » ne suffit plus. Cette leçon va plus loin : les bons événements, les codes de sortie, et deux hooks que tu vas ajouter au projet d’appli test." },
       { type: "h2", t: "Les événements de hook à connaître" },
       { type: "p", t: "Claude Code déclenche plus de trente événements de hook. Une poignée suffit au quotidien :" },
       { type: "tableau", entetes: ["Événement", "Quand"], lignes: [
@@ -371,10 +371,10 @@ export const LECONS = [
       "Le mode non interactif et l’Agent SDK servent quand la tâche a besoin de ton environnement.",
     ],
     exercice: {
-      intro: "Tu vas créer une tâche planifiée qui contrôle ton labo chaque semaine. Elle ne modifie rien : elle fait un rapport.",
+      intro: "Tu vas créer une tâche planifiée qui contrôle ton projet d’appli test chaque semaine. Elle ne modifie rien : elle fait un rapport.",
       etapes: [
         { t: "Dans Safari, ouvre claude.ai/code/routines. Touche « New task » (ou « New routine », selon ton compte). Si un menu propose « Create with Claude » et « Set up manually », choisis « Set up manually »." },
-        { t: "Nomme la tâche « Contrôle du labo », puis colle ce prompt :", p: "Tu contrôles le dépôt SPECIFICODE. Lance node --test et lis la sortie complète. Vérifie que JOURNAL.md contient une entrée de moins de 30 jours. Ne modifie aucun fichier et ne pousse rien. Termine par un rapport en français de 5 lignes au plus : RÉUSSI ou ÉCHEC pour les tests avec leur nombre, puis ce qu’il faudrait faire ensuite." },
+        { t: "Nomme la tâche « Contrôle du projet d’appli test », puis colle ce prompt :", p: "Tu contrôles le dépôt SPECIFICODE. Lance node --test et lis la sortie complète. Vérifie que JOURNAL.md contient une entrée de moins de 30 jours. Ne modifie aucun fichier et ne pousse rien. Termine par un rapport en français de 5 lignes au plus : RÉUSSI ou ÉCHEC pour les tests avec leur nombre, puis ce qu’il faudrait faire ensuite." },
         { t: "Dans la ligne « Trigger », choisis « Schedule » et une fréquence hebdomadaire, par exemple le lundi à 9 h 07 : une heure pile peut démarrer avec quelques minutes de retard. Dans « Advanced settings », choisis le dépôt `SPECIFICODE` et garde l’environnement par défaut. Retire les connecteurs dont la tâche n’a pas besoin, puis touche « Create »." },
         { t: "Sur la page de la tâche, touche « Run now » pour la lancer tout de suite. Quand l’exécution apparaît dans « History », ouvre-la.", a: "Lis la session : quelles commandes Claude a-t-il lancées ? Le rapport tient-il en 5 lignes ? Le dépôt est-il resté intact ?" },
         { t: "Décide : garde la tâche active, ou suspends-la avec l’interrupteur en haut de sa page. Chaque exécution consomme ton quota comme une session." },
@@ -388,7 +388,7 @@ export const LECONS = [
     resume: "Mettre Claude au travail dans tes pull requests.",
     objectifs: [
       "Distinguer le service Code Review et l’action GitHub de Claude",
-      "Faire tourner les tests du labo sur chaque PR avec GitHub Actions",
+      "Faire tourner les tests du projet d’appli test sur chaque PR avec GitHub Actions",
       "Faire relire puis corriger une PR par Claude depuis l’iPad",
     ],
     blocs: [
@@ -456,7 +456,7 @@ export const LECONS = [
       { type: "h2", t: "Les tests comme verrou" },
       { type: "p", t: "La vraie question : les tests ont-ils tourné, et ont-ils réussi ? Ne te contente pas d’un « tous les tests passent » : impose-le avec des hooks, que Claude ne peut pas contourner." },
       { type: "liste", items: [
-        "**Un hook `Stop`** qui lance les tests et refuse la fin du tour en cas d’échec : ton labo l’a depuis la leçon 5.",
+        "**Un hook `Stop`** qui lance les tests et refuse la fin du tour en cas d’échec : ton projet d’appli test l’a depuis la leçon 5.",
         "**Un hook `PostToolUse`** qui vérifie chaque fichier juste après sa modification.",
       ] },
       { type: "p", t: "Avec le code de sortie 2, l’échec revient directement à Claude, qui corrige sans que tu le demandes. Et la vérification tourne à chaque fois, même quand tu oublies d’y penser. Pour une exécution en mode non interactif, regarde aussi son résultat JSON et son code de sortie (leçon 6)." },
@@ -512,14 +512,14 @@ export const LECONS = [
       { type: "p", t: "Un plugin n’écrase rien : ses éléments s’ajoutent aux tiens." },
       { type: "liste", items: [
         "**Les hooks s’additionnent** : le `PreToolUse` du plugin et le tien se déclenchent tous les deux.",
-        "**Les skills, agents et commandes** sont rangés sous le nom du plugin, comme `/plugin-labo:journal` : aucune collision avec les tiens.",
+        "**Les skills, agents et commandes** sont rangés sous le nom du plugin, comme `/plugin-appli-test:journal` : aucune collision avec les tiens.",
         "**Son fichier `settings.json`** n’accepte que deux réglages. L’un d’eux, `agent`, peut remplacer le comportement principal de Claude Code par celui d’un de ses sous-agents : raison de plus pour lire avant d’activer.",
       ] },
       { type: "h2", t: "Emballer ta configuration dans un plugin" },
       { type: "p", t: "Pas besoin de tout réorganiser : un plugin reprend la structure que tu connais, et Claude Code trouve chaque élément d’après son dossier." },
-      { type: "code", titre: "plugin-labo/", texte: PLUGIN_ARBRE },
+      { type: "code", titre: "plugin-appli-test/", texte: PLUGIN_ARBRE },
       { type: "p", t: "Le manifeste `.claude-plugin/plugin.json` est facultatif. Son seul champ obligatoire est `name`, qui sert de préfixe aux skills. Ajoute une `version`, et fais-la monter à chaque changement : c’est ce qui permet de suivre les mises à jour." },
-      { type: "code", titre: "plugin-labo/.claude-plugin/plugin.json", texte: PLUGIN_MANIFESTE },
+      { type: "code", titre: "plugin-appli-test/.claude-plugin/plugin.json", texte: PLUGIN_MANIFESTE },
     ],
     retenir: [
       "Un plugin regroupe skills, sous-agents, hooks et MCP en une installation.",
@@ -530,12 +530,12 @@ export const LECONS = [
     exercice: {
       etapes: [
         { t: "Lis un plugin avant de l’installer. Nouvelle session :", p: "Sans rien modifier dans mon dépôt, va lire sur GitHub le dépôt public anthropics/claude-plugins-official et choisis un plugin qui contient des hooks. Explique-moi en français ce qu’il ajoute : ses skills, ses agents, ses serveurs MCP, et pour chaque hook, quand il se déclenche et ce qu’il exécute. Dis-moi s’il envoie des données sur internet.", a: "Tu peux aussi ouvrir ce dépôt dans Safari, sur github.com, et suivre ce que Claude décrit." },
-        { t: "Nouvelle session :", p: "Crée à la racine un dossier plugin-labo qui emballe notre configuration : le sous-agent relecteur, les skills journal et verifier, les hooks de .claude/settings.json avec leurs scripts, et le serveur MCP de .mcp.json. Adapte les chemins des scripts au plugin. Ajoute un manifeste .claude-plugin/plugin.json avec name, version 0.1.0 et description. Ne touche pas au dossier .claude. Si la commande claude plugin validate existe dans cette session, lance-la sur plugin-labo et montre-moi la sortie complète. Sinon, vérifie la structure avec le serveur claude-code-docs." },
+        { t: "Nouvelle session :", p: "Crée à la racine un dossier plugin-appli-test qui emballe notre configuration : le sous-agent relecteur, les skills journal et verifier, les hooks de .claude/settings.json avec leurs scripts, et le serveur MCP de .mcp.json. Adapte les chemins des scripts au plugin. Ajoute un manifeste .claude-plugin/plugin.json avec name, version 0.1.0 et description. Ne touche pas au dossier .claude. Si la commande claude plugin validate existe dans cette session, lance-la sur plugin-appli-test et montre-moi la sortie complète. Sinon, vérifie la structure avec le serveur claude-code-docs." },
         { t: "Tape :", p: "/journal", a: "Vérifie dans le diff que JOURNAL.md présente le plugin." },
         { t: PR_FUSION },
       ],
       details: [
-        { titre: "Comment installer ce plugin un jour ?", t: ["Sur un ordinateur, dans le terminal, `claude --plugin-dir ./plugin-labo` charge le plugin pour une session, sans l’installer. Pour une équipe, on le publie dans une marketplace, et chacun l’installe avec `/plugin install`."] },
+        { titre: "Comment installer ce plugin un jour ?", t: ["Sur un ordinateur, dans le terminal, `claude --plugin-dir ./plugin-appli-test` charge le plugin pour une session, sans l’installer. Pour une équipe, on le publie dans une marketplace, et chacun l’installe avec `/plugin install`."] },
       ],
     },
   },
@@ -573,7 +573,7 @@ export const QUIZ = [
   { q: "Claude a travaillé sans surveillance. Par quoi commences-tu ?", o: ["Son résumé", "Le diff", "Le README", "Le quiz"], b: 1, e: "Un résumé soigné peut cacher un fichier modifié par surprise. Le diff, non.", l: 8 },
   { q: "Pourquoi garder le mode Auto plutôt que Contourner les permissions pour une exécution non surveillée ?", o: ["Il est plus rapide", "Il vérifie que le code est juste", "Son classifieur continue de bloquer les actions dangereuses", "Il ne consomme pas de quota"], b: 2, e: "Mais il ne juge pas la justesse : la vérification reste nécessaire.", l: 8 },
   { q: "Tu installes un plugin pour ses skills. Que reçois-tu aussi ?", o: ["Rien d’autre", "Ses hooks, ses agents et ses serveurs MCP, lus ou non", "Une copie de ton dépôt", "Un abonnement"], b: 1, e: "Un plugin exécute du code avec tes droits : lis-le avant de l’installer.", l: 9 },
-  { q: "Quel est le seul champ obligatoire du manifeste plugin.json ?", o: ["version", "author", "description", "name"], b: 3, e: "Le nom sert de préfixe aux skills, comme /plugin-labo:journal.", l: 9 },
+  { q: "Quel est le seul champ obligatoire du manifeste plugin.json ?", o: ["version", "author", "description", "name"], b: 3, e: "Le nom sert de préfixe aux skills, comme /plugin-appli-test:journal.", l: 9 },
 ];
 
 export const LEXIQUE = [

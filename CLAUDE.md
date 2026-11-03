@@ -6,7 +6,7 @@ français, à suivre dans l’ordre. Chaque cours a son fichier de contenu (`don
 modification de contenu** (cours, leçons, exercices, quiz, lexique). Elles valent aussi pour du
 contenu préparé ailleurs (dans le chat claude.ai, par exemple) : joins alors ce fichier à la conversation.
 
-Si une demande laisse un doute (où placer la leçon, suite du labo ou nouveau projet, source du
+Si une demande laisse un doute (où placer la leçon, suite du projet d’appli test ou nouveau projet, source du
 contenu), pose la question avant d’écrire. Garde ce fichier sous 200 lignes (leçon 8).
 
 ## Commandes et hooks
@@ -31,7 +31,7 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 ## 1. Rester dans la continuité du parcours
 
 - Avant d’écrire, relis les leçons existantes du cours, au moins les deux dernières, et le tableau
-  du labo (partie 6).
+  du projet d’appli test (partie 6).
 - Ajoute toujours à la fin du cours : nouvel `id` = dernier `id` + 1 (chaque cours commence à 1).
   Ne renumérote, ne déplace et ne supprime jamais une leçon, ne change jamais l’`id` d’un cours ni
   une clé du localStorage : la progression (`cc101fr:v1`) et le carnet de révision
@@ -126,9 +126,9 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   son équivalent sur le web (`/schedule` devient « une tâche planifiée créée sur claude.ai/code/routines »).
 - Libellés de boutons entre « », tels qu’ils s’affichent, même en anglais (« Merge pull request »),
   avec ce qu’ils font en français. Pas sûr du libellé exact : décris où est le bouton.
-- Fais vérifier le résultat sur l’iPad : l’appli du labo ouverte dans Safari, sur GitHub Pages.
+- Fais vérifier le résultat sur l’iPad : l’appli test ouverte dans Safari, sur GitHub Pages.
 - Tableaux : 2 ou 3 colonnes, cellules courtes. Blocs de code : 65 caractères par ligne si possible.
-- Rien de payant en plus de Claude Pro et d’un compte GitHub gratuit. Labo public : jamais de mot de passe ni de clé.
+- Rien de payant en plus de Claude Pro et d’un compte GitHub gratuit. Projet d’appli test public : jamais de mot de passe ni de clé.
 - Si tu modifies l’interface : zones à toucher d’au moins 44 px, rien qui n’existe qu’au survol,
   mode sombre, marges `safe-area`, portrait et paysage, fonctionnement hors ligne.
 
@@ -148,13 +148,13 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 Les exercices pratiques continuent dans le même dépôt et la même appli, le carnet de courses de
 livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un nouveau projet.
 
-| Cours · leçon | Ce que le labo contient après l’exercice |
+| Cours · leçon | Ce que le projet d’appli test contient après l’exercice |
 |---|---|
 | 101 · 3 | Dépôt public `SPECIFICODE` avec un README, relié à claude.ai/code |
 | 101 · 4 | `index.html` : carnet de courses (date, km, €), totaux en km, € et €/km ; en ligne sur GitHub Pages |
 | 101 · 5 | Courses gardées dans le localStorage ; totaux dans `calculs.js`, testés avec `node --test` |
 | 101 · 7 | Bugs ou cas limites corrigés, chacun avec un test écrit d’abord |
-| 101 · 8 | `CLAUDE.md` du labo : tests, interface en français, pas de bibliothèque externe, montants « 12,50 € », clé du localStorage à garder ; gain moyen par course |
+| 101 · 8 | `CLAUDE.md` du projet d’appli test : tests, interface en français, pas de bibliothèque externe, montants « 12,50 € », clé du localStorage à garder ; gain moyen par course |
 | 101 · 9 | Sous-agent `.claude/agents/relecteur.md` (Read, Grep, Glob) ; bouton pour supprimer une course |
 | 101 · 10 | Skill `/journal` qui tient `JOURNAL.md` ; totaux en gras |
 | 101 · 11 | `.mcp.json` : serveur `claude-code-docs` |
@@ -164,14 +164,14 @@ livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un n
 | En action · 3 | Skill `verifier` (`SKILL.md`, `verifier.sh`) qui se lance seul ; meilleure course en €/km affichée |
 | En action · 4 | Bouton pour vider le formulaire de saisie |
 | En action · 5 | Hooks `Stop` (lance `node --test`) et `SessionStart` (matcher `compact`), scripts dans `.claude/hooks/` |
-| En action · 6 | Tâche planifiée « Contrôle du labo » sur claude.ai, rien dans le dépôt ; peut-être suspendue |
+| En action · 6 | Tâche planifiée « Contrôle du projet d’appli test » sur claude.ai, rien dans le dépôt ; peut-être suspendue |
 | En action · 7 | `.github/workflows/tests.yml` : `node --test` à chaque PR ; gain en €/km de chaque course |
 | En action · 8 | Hook `PostToolUse` qui lance `node --check` sur chaque `.js` modifié ; export CSV |
-| En action · 9 | Dossier `plugin-labo/` avec son manifeste : relecteur, `journal`, `verifier`, hooks, MCP |
+| En action · 9 | Dossier `plugin-appli-test/` avec son manifeste : relecteur, `journal`, `verifier`, hooks, MCP |
 
 - Pars de l’état laissé par la leçon précédente, même si elle est dans le cours d’avant : ne recrée
   pas ce qui existe, ne casse aucune règle posée.
-- Le labo de chaque apprenant peut différer un peu : les prompts demandent à Claude de lire le
+- Le projet d’appli test de chaque apprenant peut différer un peu : les prompts demandent à Claude de lire le
   code d’abord, au lieu de supposer un nom de fonction ou de fichier.
 - Réutilise ce qui existe quand ça a du sens : `node --test`, le relecteur, `/journal`, `claude-code-docs`.
 - Un nouveau projet sur plusieurs leçons : nomme-le dès la première (dépôt ou dossier, à quoi il
@@ -186,7 +186,7 @@ livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un n
 2. `CACHE` est incrémenté dans `sw.js` (`cc101fr-v5` devient `cc101fr-v6`, etc.), et tout nouveau
    fichier est ajouté à `FICHIERS`.
 3. `README.md` est à jour : il cite chaque cours, et la liste des fichiers est complète.
-4. Le tableau du labo (partie 6) est à jour.
+4. Le tableau du projet d’appli test (partie 6) est à jour.
 5. Relis comme l’apprenant : chaque étape se fait sur iPad, chaque prompt se copie, rien ne
    contredit une leçon précédente.
 6. Message de commit en français, à l’infinitif : « Ajouter la leçon 13 : … ».

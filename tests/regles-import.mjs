@@ -136,7 +136,7 @@ for (const c of COURS) if (!readme.includes(c.titre)) erreurs.push(`README.md ne
 if (nouveautes.length) {
   let claudeMdChange = true;
   try { claudeMdChange = readFileSync(join(RACINE, "CLAUDE.md"), "utf8") !== git("show", base.ref + ":CLAUDE.md"); } catch {}
-  if (!claudeMdChange) avertissements.push("Nouvelles leçons mais CLAUDE.md inchangé : si un exercice modifie le labo, mets à jour le tableau du projet fil rouge (partie 6).");
+  if (!claudeMdChange) avertissements.push("Nouvelles leçons mais CLAUDE.md inchangé : si un exercice modifie le projet d’appli test, mets à jour le tableau du projet fil rouge (partie 6).");
 }
 
 rmSync(base.dossier, { recursive: true, force: true });

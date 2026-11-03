@@ -156,7 +156,7 @@ export const LECONS = [
       "Pour t’entraîner, utilise un dépôt à part, pas tes vraies applis.",
     ],
     exercice: {
-      intro: "Tu vas créer un dépôt d’entraînement, `SPECIFICODE`, qui servira pendant tout le parcours.",
+      intro: "Tu vas créer ton **projet d’appli test** : un dépôt d’entraînement, `SPECIFICODE`, qui servira pendant tout le parcours.",
       etapes: [
         { t: "Sur github.com/new, nomme le dépôt `SPECIFICODE`. Choisis **Public** : c’est nécessaire pour publier gratuitement l’appli à la leçon 4. N’y mets donc jamais de mot de passe. Active l’option README (« Add a README file » ou « Add README » selon la version), pour que le dépôt ne soit pas vide. Puis « Create repository »." },
         { t: "Ouvre claude.ai/code dans Safari, ou l’onglet Code de l’appli Claude, et connecte-toi avec ton compte Claude." },
@@ -368,7 +368,7 @@ export const LECONS = [
       { type: "p", t: "Inutile d’y décrire l’architecture ou l’organisation des fichiers : Claude la lit lui-même." },
       { type: "h2", t: "Le garder court" },
       { type: "p", t: "Chaque ligne est relue à chaque tâche, qu’elle serve ou non. La documentation conseille de rester sous 200 lignes ; pour un petit projet, une vingtaine suffit. Écrire IMPORTANT en majuscules n’aide pas : si une ligne est ignorée, soit le fichier est trop long, soit c’est une règle sans exception, qui doit devenir un hook (leçon 12)." },
-      { type: "code", titre: "Exemple de CLAUDE.md pour ton labo", texte: "# Commandes\n- Tests : node --test\n\n# Règles\n- Interface en français, montants en euros avec 2 décimales.\n- Pas de bibliothèque externe.\n\n# Pièges\n- Les courses sont dans le localStorage : ne change pas le nom\n  de la clé, sinon les courses déjà notées disparaissent." },
+      { type: "code", titre: "Exemple de CLAUDE.md pour ton projet d’appli test", texte: "# Commandes\n- Tests : node --test\n\n# Règles\n- Interface en français, montants en euros avec 2 décimales.\n- Pas de bibliothèque externe.\n\n# Pièges\n- Les courses sont dans le localStorage : ne change pas le nom\n  de la clé, sinon les courses déjà notées disparaissent." },
       { type: "h2", t: "Les fichiers voisins" },
       { type: "tableau", entetes: ["Fichier", "Rôle"], lignes: [
         ["`CLAUDE.md`", "Les consignes du projet, partagées dans le dépôt"],
@@ -505,7 +505,7 @@ export const LECONS = [
       "Chaque serveur coûte du contexte, et demande de la confiance.",
     ],
     exercice: {
-      intro: "Tu vas brancher ton labo sur le serveur MCP de la documentation officielle de Claude Code, hébergé par Anthropic.",
+      intro: "Tu vas brancher ton projet d’appli test sur le serveur MCP de la documentation officielle de Claude Code, hébergé par Anthropic.",
       etapes: [
         { t: "Nouvelle session :", p: "Ajoute à la racine du dépôt un fichier .mcp.json qui déclare un serveur MCP HTTP nommé claude-code-docs, à l’adresse https://code.claude.com/docs/mcp." },
         { t: PR_FUSION },
