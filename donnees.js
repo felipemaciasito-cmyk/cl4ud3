@@ -156,13 +156,13 @@ export const LECONS = [
       "Pour t’entraîner, utilise un dépôt à part, pas tes vraies applis.",
     ],
     exercice: {
-      intro: "Tu vas créer un dépôt d’entraînement, `labo-claude-code`, qui servira pendant tout le parcours.",
+      intro: "Tu vas créer un dépôt d’entraînement, `SPECIFICODE`, qui servira pendant tout le parcours.",
       etapes: [
-        { t: "Sur github.com/new, nomme le dépôt `labo-claude-code`. Choisis **Public** : c’est nécessaire pour publier gratuitement l’appli à la leçon 4. N’y mets donc jamais de mot de passe. Active l’option README (« Add a README file » ou « Add README » selon la version), pour que le dépôt ne soit pas vide. Puis « Create repository »." },
+        { t: "Sur github.com/new, nomme le dépôt `SPECIFICODE`. Choisis **Public** : c’est nécessaire pour publier gratuitement l’appli à la leçon 4. N’y mets donc jamais de mot de passe. Active l’option README (« Add a README file » ou « Add README » selon la version), pour que le dépôt ne soit pas vide. Puis « Create repository »." },
         { t: "Ouvre claude.ai/code dans Safari, ou l’onglet Code de l’appli Claude, et connecte-toi avec ton compte Claude." },
-        { t: "Accepte de connecter GitHub : installe l’application Claude GitHub et donne-lui accès à `labo-claude-code`." },
+        { t: "Accepte de connecter GitHub : installe l’application Claude GitHub et donne-lui accès à `SPECIFICODE`." },
         { t: "Quand on te propose de créer un environnement, garde les réglages par défaut (accès réseau « Trusted ») et valide." },
-        { t: "Sous la zone de saisie, choisis le dépôt `labo-claude-code`, puis envoie :", p: "Décris-moi ce dépôt en une phrase et liste ses fichiers. Ne modifie rien." },
+        { t: "Sous la zone de saisie, choisis le dépôt `SPECIFICODE`, puis envoie :", p: "Décris-moi ce dépôt en une phrase et liste ses fichiers. Ne modifie rien." },
       ],
       note: "Si Claude te parle du README, tout est prêt. Si aucun dépôt n’apparaît, vérifie sur GitHub que le compte connecté a bien accès au dépôt.",
     },
@@ -210,7 +210,7 @@ export const LECONS = [
     exercice: {
       intro: "Tu vas faire construire une petite appli : un carnet pour noter des courses de livraison.",
       etapes: [
-        { t: "Nouvelle session sur `labo-claude-code`. Dans le menu des modes, à côté de la zone de saisie, choisis **Plan**." },
+        { t: "Nouvelle session sur `SPECIFICODE`. Dans le menu des modes, à côté de la zone de saisie, choisis **Plan**." },
         { t: "Envoie :", p: "Je veux une petite appli web en un seul fichier index.html, en français, pour noter mes courses de livraison : pour chaque course, la distance en km et le montant gagné en euros. Affiche la liste des courses et les totaux : km, euros et euros par km. Pas de bibliothèque externe, design simple et lisible sur iPad. Propose-moi d’abord un plan." },
         { t: "Lis le plan et demande un changement, par exemple :", p: "Ajoute la date de chaque course." },
         { t: "Valide le plan et laisse Claude coder. Passe en « Accepter automatiquement les modifications » si on te le demande." },
