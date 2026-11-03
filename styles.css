@@ -492,6 +492,155 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
   100% { opacity: 0; transform: translateY(8px); }
 }
 
+/* ------------------------------------------------ le petit robot (clin d’œil à la mascotte de Claude Code) */
+:root { --robot: #D97757; --robot-yeux: #1B1B1B; }
+
+.robot { display: inline-block; line-height: 0; }
+.robot-pixels { display: block; overflow: visible; transform-origin: 50% 100%; }
+.robot-corps, .robot-pattes-a, .robot-pattes-b { fill: var(--robot); }
+.robot-yeux { fill: var(--robot-yeux); transform-box: fill-box; transform-origin: center; animation: robot-cligne 4.2s infinite; }
+.robot-regard { animation: robot-regard 9s steps(1) infinite; }
+/* il arrive en sautillant et s’écrase un peu en touchant le sol */
+.robot-arrive .robot-pixels { animation: robot-arrive .9s cubic-bezier(.3, .7, .4, 1) both; }
+.robot-arrive .robot-pattes-a { animation: robot-trotte .18s steps(1) 4; }
+.robot-arrive .robot-pattes-b { animation: robot-trotte .18s steps(1) .09s 4; }
+/* il trépigne pendant qu’il réfléchit */
+.robot-reflechit .robot-pixels { animation: robot-dandine .5s ease-in-out infinite; }
+.robot-reflechit .robot-pattes-a { animation: robot-trotte .24s steps(1) infinite; }
+.robot-reflechit .robot-pattes-b { animation: robot-trotte .24s steps(1) .12s infinite; }
+/* saut de joie quand la réponse arrive (ou quand on le touche) */
+.robot-joie .robot-pixels { animation: robot-joie .8s ease-out; }
+
+@keyframes robot-cligne { 0%, 93%, 100% { transform: none; } 96% { transform: scaleY(.15); } }
+@keyframes robot-regard {
+  0%, 30% { transform: none; }
+  31%, 42% { transform: translateX(-1px); }
+  43%, 55% { transform: translateX(1px); }
+  56%, 100% { transform: none; }
+}
+@keyframes robot-arrive {
+  0% { transform: translate(-45%, 0) scale(.6); opacity: 0; }
+  18% { transform: translate(-30%, -40%); opacity: 1; }
+  36% { transform: translate(-15%, 0) scale(1.18, .82); }
+  54% { transform: translate(-5%, -22%); }
+  72% { transform: translate(0, 0) scale(1.12, .88); }
+  86% { transform: translateY(-6%) scale(.96, 1.05); }
+  100% { transform: none; }
+}
+@keyframes robot-joie {
+  0%, 100% { transform: none; }
+  30% { transform: translateY(-40%) rotate(-10deg); }
+  55% { transform: translateY(0) scale(1.18, .82); }
+  75% { transform: translateY(-12%) rotate(6deg); }
+}
+@keyframes robot-dandine { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg) translateY(-5%); } }
+@keyframes robot-trotte { 0% { transform: none; } 50% { transform: translateY(-1px); } }
+
+.robot-bouton {
+  position: fixed; z-index: 45; width: 52px; height: 52px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  background: var(--carte); border: 1.5px solid var(--bord); box-shadow: var(--ombre);
+  animation: robot-pop .25s ease-out both;
+}
+.robot-bouton:active { transform: scale(.94); }
+@keyframes robot-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: none; } }
+
+.bouton-conversations {
+  display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: 0 .9rem;
+  border-radius: 99px; border: 1px solid var(--bord); background: var(--carte); color: var(--encre);
+  font-weight: 700; font-size: .92rem; cursor: pointer;
+}
+.bouton-conversations svg { color: var(--robot); }
+.lecon-haut { flex-wrap: wrap; }
+.lexique .bouton-conversations { margin-left: auto; }
+
+.robot-fenetre {
+  position: fixed; z-index: 50; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; min-height: 15rem; max-height: min(78vh, 40rem);
+  background: var(--fond); color: var(--encre); border: 1px solid var(--bord); border-bottom: 0;
+  border-radius: var(--r-grand) var(--r-grand) 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, .2);
+  padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  font-size: 1rem; line-height: 1.5; outline: none;
+  animation: robot-monte .3s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes robot-monte { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@media (min-width: 900px) {
+  .robot-fenetre {
+    left: auto; right: calc(env(safe-area-inset-right, 0px) + 1rem); bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+    width: 25rem; max-height: min(80vh, 42rem); padding: 0; border-bottom: 1px solid var(--bord); border-radius: var(--r-grand);
+  }
+}
+.robot-tete { display: flex; align-items: center; gap: .2rem; padding: .45rem .5rem .4rem .4rem; border-bottom: 1px solid var(--bord); }
+.robot-avatar {
+  display: grid; place-items: center; width: 60px; height: 52px; padding: 0; border: 0;
+  background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.robot-nom { flex: 1; min-width: 0; font-family: var(--titre); font-weight: 700; font-size: 1.05rem; }
+.robot-tete .bouton-icone { color: var(--discret); }
+.robot-tete .bouton-icone.actif { background: var(--ambre-doux); color: var(--encre); }
+
+.robot-consignes { display: grid; gap: .5rem; padding: .8rem 1rem; background: var(--carte); border-bottom: 1px solid var(--bord); }
+.robot-consignes label { font-weight: 700; }
+.robot-aide { color: var(--discret); font-size: .92rem; }
+
+.robot-fil {
+  flex: 1 1 auto; min-height: 6rem; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: .6rem; padding: 1rem;
+}
+.robot-bulle {
+  max-width: 88%; padding: .6rem .9rem; border-radius: 1.1rem; overflow-wrap: anywhere;
+  background: var(--carte); border: 1px solid var(--bord); animation: entree .25s ease-out both;
+}
+.robot-bulle p + p, .robot-bulle p + pre, .robot-bulle pre + p { margin-top: .5rem; }
+.robot-de-robot { align-self: flex-start; border-bottom-left-radius: .35rem; }
+.robot-de-moi { align-self: flex-end; background: var(--ambre-doux); border-color: var(--ambre-bord); border-bottom-right-radius: .35rem; white-space: pre-wrap; }
+.robot-code {
+  margin: 0; padding: .6rem .7rem; overflow-x: auto; border-radius: .6rem; background: var(--code-fond);
+  font-family: var(--mono); font-size: .86rem; line-height: 1.45; white-space: pre;
+}
+.robot-code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.robot-connexion ol { margin: .5rem 0 .8rem; padding-left: 1.3rem; }
+.robot-connexion li + li { margin-top: .3rem; }
+.robot-attente { display: inline-flex; gap: .35rem; padding: .95rem 1rem; }
+.robot-attente i { width: .45rem; height: .45rem; background: var(--robot); animation: robot-point 1s infinite; }
+.robot-attente i:nth-child(2) { animation-delay: .15s; }
+.robot-attente i:nth-child(3) { animation-delay: .3s; }
+@keyframes robot-point { 0%, 60%, 100% { opacity: .35; transform: none; } 30% { opacity: 1; transform: translateY(-4px); } }
+.robot-erreur { color: var(--erreur); font-size: .95rem; }
+
+.robot-saisie { display: grid; gap: .5rem; padding: .6rem .8rem .8rem; border-top: 1px solid var(--bord); }
+.robot-rapides { display: flex; gap: .4rem; overflow-x: auto; scrollbar-width: none; }
+.robot-rapides::-webkit-scrollbar { display: none; }
+.robot-rapide {
+  flex: none; min-height: 44px; padding: 0 .95rem; border-radius: 99px; cursor: pointer;
+  border: 1px solid var(--bord); background: var(--carte); font-size: .92rem; font-weight: 700;
+}
+.robot-rapide:disabled { opacity: .5; cursor: not-allowed; }
+.robot-ligne { display: flex; gap: .5rem; align-items: flex-end; }
+.robot-fenetre textarea {
+  flex: 1; min-width: 0; width: 100%; min-height: 48px; max-height: 8rem; resize: none;
+  padding: .7rem .85rem; border-radius: var(--r-petit); border: 1.5px solid var(--bord);
+  background: var(--carte); color: var(--encre); font: inherit; font-size: 1rem;
+}
+.robot-fenetre textarea:focus { outline: none; border-color: var(--ambre); }
+.robot-envoyer { flex: none; width: 48px; padding: 0; }
+
+.robot-tri { display: flex; align-items: center; gap: .6rem; font-weight: 700; }
+.robot-tri select {
+  min-height: 44px; padding: 0 .7rem; border-radius: var(--r-petit); border: 1.5px solid var(--bord);
+  background: var(--carte); color: var(--encre); font: inherit; font-size: 1rem;
+}
+.robot-liste ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.robot-conv { display: flex; align-items: center; gap: .2rem; background: var(--carte); border: 1px solid var(--bord); border-radius: var(--r-moyen); }
+.robot-conv-ouvrir {
+  flex: 1; min-width: 0; min-height: 56px; display: grid; gap: .1rem; padding: .55rem .9rem;
+  text-align: left; border: 0; background: transparent; cursor: pointer;
+}
+.robot-conv-ouvrir strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.robot-conv-ouvrir span { color: var(--discret); font-size: .88rem; }
+.robot-conv-supprimer { flex: none; margin-right: .3rem; color: var(--discret); }
+.robot-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: auto; padding-top: .4rem; }
+
 @media (max-width: 560px) {
   body { font-size: 1.0625rem; }
   main { padding-top: 1.5rem; }

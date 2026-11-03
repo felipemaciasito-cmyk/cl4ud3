@@ -231,7 +231,91 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
       await ctx.close();
     }
 
-    // ---------- 7. Hors ligne
+    // ---------- 7. Le petit robot
+    titre("Le petit robot");
+    {
+      const { ctx, p } = await ouvrir();
+      const c = PREMIER;
+      const page = `${c.id}/lecon-1`;
+      await aller(p, BASE + lien(c, "lecon-1"));
+      // Sélectionne le premier paragraphe de la leçon, comme le ferait le doigt sur l’iPad.
+      const selectionner = async () => {
+        const t = await p.evaluate(() => {
+          const el = document.querySelector(".contenu > p");
+          el.scrollIntoView({ block: "center" });
+          const r = document.createRange(); r.selectNodeContents(el);
+          const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+          return s.toString().replace(/\s+/g, " ").trim();
+        });
+        await p.waitForSelector(".robot-bouton", { timeout: 3000 }).catch(() => {});
+        return t;
+      };
+      const passage = await selectionner();
+      const boite = await p.locator(".robot-bouton").boundingBox().catch(() => null);
+      ok("Sélectionner un passage fait apparaître le robot", !!boite);
+      ok("Le robot se touche facilement (44 px au moins)", boite && boite.width >= 44 && boite.height >= 44);
+      await p.locator(".robot-bouton").tap(); await attendre(p, 400);
+      const fen = p.locator(".robot-fenetre");
+      ok("Le toucher ouvre une fenêtre avec un message de bienvenue", (await fen.isVisible()) && ((await p.locator(".robot-de-robot").first().textContent()) || "").length > 10);
+      ok("Le passage sélectionné n’est pas recopié dans la fenêtre", !((await fen.textContent()) || "").includes(passage.slice(0, 40)));
+      ok("Sans service IA : il explique comment en connecter une", (await p.locator(".robot-connexion a[href='revisions.html']").count()) === 1 && (await p.locator(".robot-saisie").count()) === 0);
+      await p.locator(".robot-fenetre button[aria-label=Fermer]").tap(); await attendre(p, 200);
+
+      // Un service IA factice, sur le même site, qui répond comme le vrai.
+      const envois = [];
+      await p.route(BASE + "ia-factice", async (r) => {
+        envois.push(JSON.parse(r.request().postData() || "{}"));
+        await r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ answer: `Réponse **numéro ${envois.length}**.` }) });
+      });
+      await p.evaluate((u) => localStorage.setItem("cc101fr:revision-ai:v1", JSON.stringify({ endpoint: u })), BASE + "ia-factice");
+      const converser = async (q) => {
+        await selectionner();
+        await p.locator(".robot-bouton").tap(); await attendre(p, 300);
+        await p.locator(".robot-saisie textarea").fill(q);
+        await p.locator(".robot-envoyer").tap();
+        await p.waitForSelector(".robot-de-robot strong", { timeout: 5000 }).catch(() => {});
+      };
+      await selectionner();
+      await p.locator(".robot-bouton").tap(); await attendre(p, 300);
+      await p.locator(".robot-consignes-bouton").tap();
+      await p.locator("#robot-consignes").fill("Réponds en une phrase.");
+      await p.locator(".robot-consignes button", { hasText: "Enregistrer" }).tap(); await attendre(p, 150);
+      ok("Les consignes de réponse sont enregistrées", (await stockage(p, "cc101fr:robot:v1"))?.consignes === "Réponds en une phrase.");
+      await p.locator(".robot-fenetre button[aria-label=Fermer]").tap(); await attendre(p, 200);
+
+      await converser("Que veut dire ce passage ?");
+      const premier = envois[0]?.messages?.[0]?.content || "";
+      ok("La question part avec le passage sélectionné", premier.includes(passage.slice(0, 40)) && premier.includes("Que veut dire ce passage ?"));
+      ok("Elle part avec les consignes de réponse", premier.includes("Réponds en une phrase."));
+      ok("La réponse s’affiche", /numéro 1/.test((await p.locator(".robot-fenetre").textContent()) || ""));
+      const petits = await petitesCibles(p);
+      ok("Fenêtre du robot : zones à toucher d’au moins 44 px", !petits.length, petits.slice(0, 3).join(", "));
+      await p.locator(".robot-fenetre button[aria-label=Fermer]").tap(); await attendre(p, 200);
+      await converser("Et la deuxième question ?");
+      await p.locator(".robot-fenetre button[aria-label=Fermer]").tap(); await attendre(p, 200);
+
+      const gardees = ((await stockage(p, "cc101fr:robot-conversations:v1")) || []).filter((x) => x.page === page);
+      ok("Deux conversations gardées pour cette page", gardees.length === 2);
+      ok("Bouton « Conversations (2) » en haut de la leçon", /Conversations \(2\)/.test((await p.locator(".bouton-conversations").textContent().catch(() => "")) || ""));
+      await p.evaluate(() => scrollTo(0, 0));
+      await p.locator(".bouton-conversations").tap(); await attendre(p, 300);
+      const titres = () => p.locator(".robot-conv strong").allTextContents();
+      ok("La liste montre les conversations, les plus récentes d’abord", JSON.stringify(await titres()) === JSON.stringify(["Et la deuxième question ?", "Que veut dire ce passage ?"]));
+      await p.locator(".robot-tri select").selectOption("anciennes"); await attendre(p, 150);
+      ok("Trier par les plus anciennes", (await titres())[0] === "Que veut dire ce passage ?");
+      await p.locator(".robot-conv-ouvrir").first().tap(); await attendre(p, 300);
+      ok("Rouvrir une conversation", /numéro 1/.test((await p.locator(".robot-fenetre").textContent()) || ""));
+      await p.locator(".robot-liste-bouton").tap(); await attendre(p, 200);
+      await p.locator(".robot-conv-supprimer").first().tap(); await attendre(p, 300);
+      ok("Supprimer une conversation", (await p.locator(".robot-conv").count()) === 1 && ((await stockage(p, "cc101fr:robot-conversations:v1")) || []).length === 1);
+      await p.locator(".robot-tout-supprimer").tap(); await attendre(p, 300);
+      ok("Tout supprimer sur la page", (await p.locator(".robot-conv").count()) === 0 && ((await stockage(p, "cc101fr:robot-conversations:v1")) || []).length === 0);
+      ok("Pas de défilement horizontal", !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)));
+      ok("Aucune erreur JavaScript", !p.erreurs.length, p.erreurs.join(" | "));
+      await ctx.close();
+    }
+
+    // ---------- 8. Hors ligne
     titre("Hors ligne");
     {
       const { ctx, p } = await ouvrir();

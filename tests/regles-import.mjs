@@ -125,7 +125,7 @@ const changes = fichiersServis(sw).filter((f) => f !== "./" && f !== "sw.js").fi
 if (changes.length && cacheDe(sw) === cacheDe(swRef)) erreurs.push(`Fichiers modifiés (${changes.join(", ")}) mais CACHE n’a pas changé dans sw.js (${cacheDe(sw)}) : incrémente-le.`);
 
 // 5. Les clés de stockage ne changent jamais (sinon la progression est perdue).
-for (const [f, cles] of [["app.jsx", ["cc101fr:v1", "cc101fr:revisions:v1"]], ["app.js", ["cc101fr:v1", "cc101fr:revisions:v1"]], ["revisions-app.js", ["cc101fr:revisions:v1", "cc101fr:revision-ai:v1"]]]) {
+for (const [f, cles] of [["app.jsx", ["cc101fr:v1", "cc101fr:revisions:v1", "cc101fr:robot:v1", "cc101fr:robot-conversations:v1"]], ["app.js", ["cc101fr:v1", "cc101fr:revisions:v1", "cc101fr:robot:v1", "cc101fr:robot-conversations:v1"]], ["revisions-app.js", ["cc101fr:revisions:v1", "cc101fr:revision-ai:v1"]]]) {
   const t = readFileSync(join(RACINE, f), "utf8");
   for (const k of cles) if (!t.includes(`"${k}"`)) erreurs.push(`${f} : la clé de stockage « ${k} » a disparu. La progression serait perdue.`);
 }

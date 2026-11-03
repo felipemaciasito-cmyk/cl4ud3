@@ -34,8 +34,9 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   du labo (partie 6).
 - Ajoute toujours à la fin du cours : nouvel `id` = dernier `id` + 1 (chaque cours commence à 1).
   Ne renumérote, ne déplace et ne supprime jamais une leçon, ne change jamais l’`id` d’un cours ni
-  une clé du localStorage : la progression (`cc101fr:v1`) et le carnet de révision
-  (`cc101fr:revisions:v1`) enregistrent ces numéros. Ces identifiants gardent l’ancien nom de l’appli
+  une clé du localStorage : la progression (`cc101fr:v1`), le carnet de révision
+  (`cc101fr:revisions:v1`) et les conversations du petit robot (`cc101fr:robot-conversations:v1`,
+  réglages dans `cc101fr:robot:v1`) enregistrent ces numéros. Ces identifiants gardent l’ancien nom de l’appli
   (`cc101`) : ne les renomme pas en CL4UD3.
 - Place la leçon dans une section existante du cours, ou ajoute la section à la fin de son `SECTIONS`.
 - Une notion s’appuie sur celles déjà vues. N’utilise pas une notion pas encore expliquée ; renvoie à

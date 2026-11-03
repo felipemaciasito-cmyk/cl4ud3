@@ -142,6 +142,12 @@ const IcLoupe = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @
 const IcRelancer = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }), /* @__PURE__ */ React.createElement("path", { d: "M3 3v5h5" }));
 const IcDrapeau = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" }), /* @__PURE__ */ React.createElement("path", { d: "M4 22v-7" }));
 const IcLivre = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" }), /* @__PURE__ */ React.createElement("path", { d: "M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" }));
+const IcListe = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M3 6h.01" }), /* @__PURE__ */ React.createElement("path", { d: "M3 12h.01" }), /* @__PURE__ */ React.createElement("path", { d: "M3 18h.01" }), /* @__PURE__ */ React.createElement("path", { d: "M8 6h13" }), /* @__PURE__ */ React.createElement("path", { d: "M8 12h13" }), /* @__PURE__ */ React.createElement("path", { d: "M8 18h13" }));
+const IcCorbeille = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M3 6h18" }), /* @__PURE__ */ React.createElement("path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" }), /* @__PURE__ */ React.createElement("path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" }));
+const IcReglages = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M20 7h-9" }), /* @__PURE__ */ React.createElement("path", { d: "M14 17H5" }), /* @__PURE__ */ React.createElement("circle", { cx: "17", cy: "17", r: "3" }), /* @__PURE__ */ React.createElement("circle", { cx: "7", cy: "7", r: "3" }));
+const IcEnvoyer = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "m22 2-7 20-4-9-9-4Z" }), /* @__PURE__ */ React.createElement("path", { d: "M22 2 11 13" }));
+const IcPlus = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M5 12h14" }), /* @__PURE__ */ React.createElement("path", { d: "M12 5v14" }));
+const IcBulle = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M7.9 20A9 9 0 1 0 4 16.1L2 22Z" }));
 function fr(s) {
   return String(s).replace(/« /g, "« ").replace(/ »/g, " »").replace(/ ([?!:;])/g, " $1");
 }
@@ -352,7 +358,7 @@ function Lecon({ cours: c, id, etat, setEtat, toast }) {
     if (!fait) toast(id === TOTAL ? c.QUIZ.length ? "Dernière leçon terminée. Place au quiz !" : "Dernière leçon terminée" : `Leçon ${id} terminée`);
   };
   const classeSuite = "bouton " + (fait ? "bouton-principal" : "bouton-contour");
-  return /* @__PURE__ */ React.createElement("article", { className: "page lecon" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement("span", { className: "lecon-section" }, PLUSIEURS ? `${c.titre} · ${c.SECTIONS[l.section]}` : c.SECTIONS[l.section])), /* @__PURE__ */ React.createElement(Pastilles, { c, id, faites }), /* @__PURE__ */ React.createElement("h1", null, l.titre), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, "Leçon ", id, " sur ", TOTAL, ", environ ", l.duree, " minutes exercice compris"), /* @__PURE__ */ React.createElement("section", { className: "carte objectifs" }, /* @__PURE__ */ React.createElement("h2", null, "Dans cette leçon"), /* @__PURE__ */ React.createElement("ul", null, l.objectifs.map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: o }))))), /* @__PURE__ */ React.createElement("div", { className: "contenu" }, l.blocs.map((b, i) => /* @__PURE__ */ React.createElement(Bloc, { key: i, b }))), /* @__PURE__ */ React.createElement("aside", { className: "retenir" }, /* @__PURE__ */ React.createElement("h2", null, "À retenir"), /* @__PURE__ */ React.createElement("ul", null, l.retenir.map((r, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: r }))))), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: `revisions.html?course=${c.id}&lesson=${id}` }, "Noter une difficulté sur cette leçon")), /* @__PURE__ */ React.createElement(Exercice, { ex: l.exercice, cours: c, lessonId: id }), /* @__PURE__ */ React.createElement("nav", { className: "lecon-pied", "aria-label": "Navigation entre les leçons" }, id > 1 ? /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: lien(c, `lecon-${id - 1}`) }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Précédente")) : /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: "#" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Parcours")), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-fait" + (fait ? " est-fait" : ""), onClick: basculer, "aria-pressed": fait }, /* @__PURE__ */ React.createElement("span", { className: "coche", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" })), fait ? "Leçon terminée" : "Marquer comme terminée"), id < TOTAL ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, `lecon-${id + 1}`) }, /* @__PURE__ */ React.createElement("span", null, "Suivante"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : c.QUIZ.length ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, "quiz") }, /* @__PURE__ */ React.createElement("span", null, "Quiz final"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : suivant ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(suivant, "lecon-1") }, /* @__PURE__ */ React.createElement("span", null, "Cours suivant"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: "#" }, /* @__PURE__ */ React.createElement("span", null, "Parcours"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 }))));
+  return /* @__PURE__ */ React.createElement("article", { className: "page lecon" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement("span", { className: "lecon-section" }, PLUSIEURS ? `${c.titre} · ${c.SECTIONS[l.section]}` : c.SECTIONS[l.section]), /* @__PURE__ */ React.createElement(BoutonConversations, { page: `${c.id}/lecon-${id}` })), /* @__PURE__ */ React.createElement(Pastilles, { c, id, faites }), /* @__PURE__ */ React.createElement("h1", null, l.titre), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, "Leçon ", id, " sur ", TOTAL, ", environ ", l.duree, " minutes exercice compris"), /* @__PURE__ */ React.createElement("section", { className: "carte objectifs" }, /* @__PURE__ */ React.createElement("h2", null, "Dans cette leçon"), /* @__PURE__ */ React.createElement("ul", null, l.objectifs.map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: o }))))), /* @__PURE__ */ React.createElement("div", { className: "contenu" }, l.blocs.map((b, i) => /* @__PURE__ */ React.createElement(Bloc, { key: i, b }))), /* @__PURE__ */ React.createElement("aside", { className: "retenir" }, /* @__PURE__ */ React.createElement("h2", null, "À retenir"), /* @__PURE__ */ React.createElement("ul", null, l.retenir.map((r, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: r }))))), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: `revisions.html?course=${c.id}&lesson=${id}` }, "Noter une difficulté sur cette leçon")), /* @__PURE__ */ React.createElement(Exercice, { ex: l.exercice, cours: c, lessonId: id }), /* @__PURE__ */ React.createElement("nav", { className: "lecon-pied", "aria-label": "Navigation entre les leçons" }, id > 1 ? /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: lien(c, `lecon-${id - 1}`) }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Précédente")) : /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: "#" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Parcours")), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-fait" + (fait ? " est-fait" : ""), onClick: basculer, "aria-pressed": fait }, /* @__PURE__ */ React.createElement("span", { className: "coche", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" })), fait ? "Leçon terminée" : "Marquer comme terminée"), id < TOTAL ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, `lecon-${id + 1}`) }, /* @__PURE__ */ React.createElement("span", null, "Suivante"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : c.QUIZ.length ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, "quiz") }, /* @__PURE__ */ React.createElement("span", null, "Quiz final"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : suivant ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(suivant, "lecon-1") }, /* @__PURE__ */ React.createElement("span", null, "Cours suivant"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: "#" }, /* @__PURE__ */ React.createElement("span", null, "Parcours"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 }))));
 }
 function Quiz({ cours, etat, setEtat }) {
   const { QUIZ, LECONS } = cours;
@@ -456,7 +462,7 @@ function Lexique() {
     const f = norm(filtre.trim());
     return f ? LEXIQUE.filter(([m, d]) => norm(m).includes(f) || norm(d).includes(f)) : LEXIQUE;
   }, [filtre]);
-  return /* @__PURE__ */ React.createElement("article", { className: "page lexique" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours")), /* @__PURE__ */ React.createElement("h1", null, "Lexique"), /* @__PURE__ */ React.createElement("p", { className: "chapo" }, "Les mots du parcours, expliqués simplement."), /* @__PURE__ */ React.createElement("label", { className: "recherche" }, /* @__PURE__ */ React.createElement(IcLoupe, { taille: 18 }), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("article", { className: "page lexique" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement(BoutonConversations, { page: "lexique" })), /* @__PURE__ */ React.createElement("h1", null, "Lexique"), /* @__PURE__ */ React.createElement("p", { className: "chapo" }, "Les mots du parcours, expliqués simplement."), /* @__PURE__ */ React.createElement("label", { className: "recherche" }, /* @__PURE__ */ React.createElement(IcLoupe, { taille: 18 }), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "search",
@@ -466,6 +472,404 @@ function Lexique() {
       "aria-label": "Chercher un mot dans le lexique"
     }
   )), liste.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "vide" }, "Aucun mot ne correspond à « ", filtre, " ». Essaie un mot plus court.") : /* @__PURE__ */ React.createElement("dl", null, liste.map(([m, d]) => /* @__PURE__ */ React.createElement("div", { key: m, className: "lexique-entree" }, /* @__PURE__ */ React.createElement("dt", null, m), /* @__PURE__ */ React.createElement("dd", null, fr(d))))));
+}
+const CLE_ROBOT = "cc101fr:robot:v1";
+const CLE_CONVERSATIONS = "cc101fr:robot-conversations:v1";
+const CLE_SERVICE_IA = "cc101fr:revision-ai:v1";
+const MAX_PAR_PAGE = 30;
+const BIENVENUES = [
+  "Hey, salut toi ! Qu’est-ce que tu veux savoir sur ce passage ?",
+  "Bonjour ! Pose-moi ta question, je t’écoute.",
+  "Coucou ! Un mot t’échappe ? On regarde ça ensemble.",
+  "Bip bip ! Petit robot au rapport. Qu’est-ce qui te turlupine ?",
+  "Salut ! On décortique ce passage ensemble ?",
+  "Hello ! Je suis tout ouïe. Vas-y, demande-moi."
+];
+const RAPIDES = [
+  { l: "Plus simple", q: "Explique-le-moi plus simplement, comme à un débutant." },
+  { l: "Un exemple", q: "Donne-moi un exemple concret." },
+  { l: "Plus court", q: "Résume-le en deux phrases." }
+];
+const TRIS = [
+  { v: "recentes", l: "Plus récentes", f: (a, b) => b.modifieLe - a.modifieLe },
+  { v: "anciennes", l: "Plus anciennes", f: (a, b) => a.creeLe - b.creeLe },
+  { v: "longues", l: "Les plus longues", f: (a, b) => b.messages.length - a.messages.length || b.modifieLe - a.modifieLe }
+];
+const CONSIGNE_ROBOT = "Tu es le petit robot de CL4UD3, une appli qui aide à suivre en français des cours sur Claude Code. L’apprenant te pose des questions sur un passage du cours qu’il a sélectionné. Réponds en français, en le tutoyant, avec des phrases courtes et simples. Appuie-toi sur le passage et sur ce que tu sais de Claude Code. Si tu n’es pas sûr d’une information, dis-le clairement : n’invente ni commande, ni libellé, ni adresse. Mise en forme possible : **gras**, `code`, une ligne vide entre deux paragraphes. Pas d’autre Markdown.";
+function lireJson(cle, defaut) {
+  try {
+    const v = JSON.parse(localStorage.getItem(cle) || "null");
+    return v == null ? defaut : v;
+  } catch (e) {
+    return defaut;
+  }
+}
+function ecrireJson(cle, v) {
+  try {
+    localStorage.setItem(cle, JSON.stringify(v));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+const relaisRobot = new EventTarget();
+function lireConversations() {
+  const l = lireJson(CLE_CONVERSATIONS, []);
+  return Array.isArray(l) ? l : [];
+}
+function ecrireConversations(liste) {
+  let l = liste;
+  while (!ecrireJson(CLE_CONVERSATIONS, l) && l.length) {
+    const ancienne = l.reduce((a, b) => a.modifieLe <= b.modifieLe ? a : b);
+    l = l.filter((x) => x !== ancienne);
+  }
+  relaisRobot.dispatchEvent(new Event("conversations"));
+}
+function enregistrerConversation(conv) {
+  const autres = lireConversations().filter((x) => x.id !== conv.id);
+  const page = [conv, ...autres.filter((x) => x.page === conv.page)].sort((a, b) => b.modifieLe - a.modifieLe).slice(0, MAX_PAR_PAGE);
+  ecrireConversations([...page, ...autres.filter((x) => x.page !== conv.page)]);
+}
+function supprimerConversations(filtre) {
+  ecrireConversations(lireConversations().filter((x) => !filtre(x)));
+}
+function useConversations(page) {
+  const lire = () => page ? lireConversations().filter((x) => x.page === page) : [];
+  const [liste, setListe] = useState(lire);
+  useEffect(() => {
+    const f = () => setListe(lire());
+    f();
+    relaisRobot.addEventListener("conversations", f);
+    return () => relaisRobot.removeEventListener("conversations", f);
+  }, [page]);
+  return liste;
+}
+function pageDuRobot(route) {
+  if (route.vue === "lecon") return { cle: `${route.cours.id}/lecon-${route.id}`, cours: route.cours.titre, titre: `Leçon ${route.id} : ${route.cours.LECONS[route.id - 1].titre}` };
+  if (route.vue === "lexique") return { cle: "lexique", cours: "Lexique commun à tous les cours", titre: "Lexique" };
+  return null;
+}
+const titreConversation = (x) => {
+  const q = (x.messages.find((m) => m.role === "user") || {}).t || "Conversation sans question";
+  return q.length > 80 ? q.slice(0, 79) + "…" : q;
+};
+const DATE_ROBOT = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+async function demanderAuRobot(adresse, conv, consignes) {
+  const contexte = [
+    CONSIGNE_ROBOT,
+    `Cours : ${conv.cours}`,
+    `Page : ${conv.pageTitre}`,
+    conv.extrait ? `Passage sélectionné :
+« ${conv.extrait} »` : "Pas de passage sélectionné : la question porte sur la page en général."
+  ].join("\n\n");
+  const n = conv.messages.length;
+  const messages = conv.messages.map((m, i) => {
+    let t = m.t;
+    if (i === 0) t = contexte + "\n\nMa question : " + t;
+    if (i === n - 1 && consignes) t += "\n\nMes consignes sur ta façon de répondre, à suivre en priorité : " + consignes;
+    return { role: m.role, content: t };
+  });
+  const ctrl = new AbortController();
+  const minuteur = setTimeout(() => ctrl.abort(), 3e4);
+  try {
+    let rep;
+    try {
+      rep = await fetch(adresse, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages }), signal: ctrl.signal });
+    } catch (e) {
+      throw Error(e.name === "AbortError" ? "Le service IA met plus de 30 secondes à répondre. Réessaie dans un moment." : "Je n’arrive pas à joindre le service IA. Vérifie ta connexion à Internet, puis réessaie.");
+    }
+    let d;
+    try {
+      d = await rep.json();
+    } catch (e) {
+      throw Error("La réponse du service IA est illisible.");
+    }
+    if (!rep.ok) {
+      const motif = d.error && (d.error.message || d.error) || d.message || "erreur " + rep.status;
+      throw Error("Le service IA a refusé la demande : " + String(motif));
+    }
+    const t = typeof d.answer === "string" ? d.answer : typeof d.content === "string" ? d.content : Array.isArray(d.content) ? d.content.filter((x) => x && x.type === "text").map((x) => x.text).join("\n\n") : d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    if (typeof t !== "string" || !t.trim()) throw Error("Le service IA n’a pas renvoyé de réponse.");
+    return t.trim();
+  } finally {
+    clearTimeout(minuteur);
+  }
+}
+function RobotPixels({ taille = 40 }) {
+  return /* @__PURE__ */ React.createElement(
+    "svg",
+    {
+      className: "robot-pixels",
+      width: taille,
+      height: Math.round(taille * 11 / 16),
+      viewBox: "0 0 16 11",
+      shapeRendering: "crispEdges",
+      "aria-hidden": "true"
+    },
+    /* @__PURE__ */ React.createElement("g", { className: "robot-pattes-a" }, /* @__PURE__ */ React.createElement("rect", { x: "4", y: "8", width: "1", height: "3" }), /* @__PURE__ */ React.createElement("rect", { x: "9", y: "8", width: "1", height: "3" })),
+    /* @__PURE__ */ React.createElement("g", { className: "robot-pattes-b" }, /* @__PURE__ */ React.createElement("rect", { x: "6", y: "8", width: "1", height: "3" }), /* @__PURE__ */ React.createElement("rect", { x: "11", y: "8", width: "1", height: "3" })),
+    /* @__PURE__ */ React.createElement("g", { className: "robot-corps" }, /* @__PURE__ */ React.createElement("rect", { x: "3", y: "1", width: "10", height: "7" }), /* @__PURE__ */ React.createElement("rect", { x: "1", y: "4", width: "2", height: "2" }), /* @__PURE__ */ React.createElement("rect", { x: "13", y: "4", width: "2", height: "2" })),
+    /* @__PURE__ */ React.createElement("g", { className: "robot-regard" }, /* @__PURE__ */ React.createElement("g", { className: "robot-yeux" }, /* @__PURE__ */ React.createElement("rect", { x: "5", y: "3", width: "1", height: "2" }), /* @__PURE__ */ React.createElement("rect", { x: "10", y: "3", width: "1", height: "2" })))
+  );
+}
+function TexteRobot({ t }) {
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, t.split("```").map((m, i) => i % 2 ? /* @__PURE__ */ React.createElement("pre", { key: i, className: "robot-code" }, /* @__PURE__ */ React.createElement("code", null, m.replace(/^[\w-]*\n/, "").replace(/\n$/, ""))) : m.split(/\n{2,}/).filter((x) => x.trim()).map((x, j) => /* @__PURE__ */ React.createElement("p", { key: i + "-" + j }, /* @__PURE__ */ React.createElement(Texte, { t: x.trim() })))));
+}
+function BoutonConversations({ page }) {
+  const n = useConversations(page).length;
+  if (!n) return null;
+  return /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton-conversations", onClick: () => relaisRobot.dispatchEvent(new Event("ouvrir-liste")) }, /* @__PURE__ */ React.createElement(IcBulle, { taille: 17 }), "Conversations (", n, ")");
+}
+function Robot({ route }) {
+  const page = pageDuRobot(route);
+  const cle = page ? page.cle : null;
+  const liste = useConversations(cle);
+  const [sel, setSel] = useState(null);
+  const [ouvert, setOuvert] = useState(false);
+  const [vue, setVue] = useState("chat");
+  const [conv, setConv] = useState(null);
+  const [humeur, setHumeur] = useState("arrive");
+  const [question, setQuestion] = useState("");
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState("");
+  const [service, setService] = useState("");
+  const [reglages, setReglages] = useState(() => ({ consignes: "", tri: "recentes", ...lireJson(CLE_ROBOT, {}) }));
+  const [voirConsignes, setVoirConsignes] = useState(false);
+  const [brouillon, setBrouillon] = useState(reglages.consignes);
+  const plage = useRef(null), attente = useRef(null), fil = useRef(null), fenetre = useRef(null);
+  const majReglages = (p) => setReglages((r) => {
+    const n = { ...r, ...p };
+    ecrireJson(CLE_ROBOT, n);
+    return n;
+  });
+  const lireService = () => setService(String((lireJson(CLE_SERVICE_IA, {}) || {}).endpoint || ""));
+  useEffect(() => {
+    if (!cle) {
+      setSel(null);
+      return;
+    }
+    const placer = () => {
+      const r = plage.current;
+      if (!r) return;
+      const rects = r.getClientRects();
+      const b = rects.length ? rects[rects.length - 1] : r.getBoundingClientRect();
+      const t = 52, marge = 12;
+      const x = Math.min(Math.max(b.right - t / 2, marge), window.innerWidth - t - marge);
+      let y = b.bottom + 10;
+      if (y + t > window.innerHeight - marge) y = Math.max(b.top - t - 10, marge);
+      setSel((s) => s && { ...s, x, y });
+    };
+    const lire = () => {
+      const s = document.getSelection();
+      const texte = s && s.rangeCount ? s.toString().replace(/\s+/g, " ").trim() : "";
+      const r = texte.length >= 2 ? s.getRangeAt(0) : null;
+      const n = r && r.commonAncestorContainer;
+      const el = n && (n.nodeType === 1 ? n : n.parentElement);
+      if (!el || !el.closest("main .page") || el.closest("input, textarea, .robot-fenetre")) {
+        plage.current = null;
+        setSel(null);
+        return;
+      }
+      plage.current = r;
+      setSel((avant) => ({ texte: texte.slice(0, 1500), x: 0, y: 0, n: avant ? avant.n : Date.now() }));
+      placer();
+    };
+    const auChangement = () => {
+      clearTimeout(attente.current);
+      attente.current = setTimeout(lire, 300);
+    };
+    const auDefilement = () => requestAnimationFrame(placer);
+    document.addEventListener("selectionchange", auChangement);
+    window.addEventListener("scroll", auDefilement, { passive: true });
+    window.addEventListener("resize", auDefilement);
+    return () => {
+      clearTimeout(attente.current);
+      document.removeEventListener("selectionchange", auChangement);
+      window.removeEventListener("scroll", auDefilement);
+      window.removeEventListener("resize", auDefilement);
+    };
+  }, [cle]);
+  useEffect(() => {
+    setOuvert(false);
+    setConv(null);
+    setVoirConsignes(false);
+  }, [cle]);
+  useEffect(() => {
+    const f = () => {
+      lireService();
+      setVue("liste");
+      setOuvert(true);
+    };
+    relaisRobot.addEventListener("ouvrir-liste", f);
+    return () => relaisRobot.removeEventListener("ouvrir-liste", f);
+  }, []);
+  useEffect(() => {
+    if (humeur !== "arrive" && humeur !== "joie") return;
+    const m = setTimeout(() => setHumeur((h) => h === humeur ? "repos" : h), 1e3);
+    return () => clearTimeout(m);
+  }, [humeur, conv && conv.id]);
+  useEffect(() => {
+    if (!ouvert) return;
+    if (fenetre.current) fenetre.current.focus({ preventScroll: true });
+    const f = (e) => {
+      if (e.key === "Escape") setOuvert(false);
+    };
+    window.addEventListener("keydown", f);
+    return () => window.removeEventListener("keydown", f);
+  }, [ouvert]);
+  useEffect(() => {
+    if (fil.current) fil.current.scrollTop = fil.current.scrollHeight;
+  }, [conv, envoi, erreur, ouvert, vue, service]);
+  if (!page) return null;
+  const nouvelle = (extrait) => {
+    lireService();
+    setConv({
+      id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      page: cle,
+      cours: page.cours,
+      pageTitre: page.titre,
+      extrait: extrait || "",
+      creeLe: Date.now(),
+      modifieLe: Date.now(),
+      bienvenue: BIENVENUES[Math.floor(Math.random() * BIENVENUES.length)],
+      messages: []
+    });
+    setVue("chat");
+    setOuvert(true);
+    setHumeur("arrive");
+    setErreur("");
+    setQuestion("");
+  };
+  const ouvrirAvecSelection = () => {
+    if (!sel) return;
+    nouvelle(sel.texte);
+    plage.current = null;
+    setSel(null);
+    try {
+      document.getSelection().removeAllRanges();
+    } catch (e) {
+    }
+  };
+  const rouvrir = (x) => {
+    lireService();
+    setConv(x);
+    setVue("chat");
+    setErreur("");
+    setQuestion("");
+    setHumeur("arrive");
+  };
+  const envoyer = async (texte) => {
+    const q = texte.trim();
+    if (!q || envoi || !conv || !service) return;
+    const c1 = { ...conv, modifieLe: Date.now(), messages: [...conv.messages, { role: "user", t: q }] };
+    const meme = (f) => setConv((c) => c && c.id === c1.id ? f(c) : c);
+    setConv(c1);
+    setQuestion("");
+    setErreur("");
+    setEnvoi(true);
+    setHumeur("reflechit");
+    try {
+      const reponse = await demanderAuRobot(service, c1, (reglages.consignes || "").trim());
+      const c2 = { ...c1, modifieLe: Date.now(), messages: [...c1.messages, { role: "assistant", t: reponse }] };
+      enregistrerConversation(c2);
+      meme(() => c2);
+      setHumeur("joie");
+    } catch (e) {
+      meme(() => conv);
+      setQuestion((v) => v || q);
+      setErreur(e.message);
+      setHumeur("repos");
+    } finally {
+      setEnvoi(false);
+    }
+  };
+  const supprimer = (x) => {
+    if (!window.confirm(`Supprimer la conversation « ${titreConversation(x)} » ?`)) return;
+    supprimerConversations((y) => y.id === x.id);
+    if (conv && conv.id === x.id) setConv(null);
+  };
+  const toutSupprimer = () => {
+    if (!window.confirm("Supprimer toutes les conversations de cette page ?")) return;
+    supprimerConversations((y) => y.page === cle);
+    setConv(null);
+  };
+  const tri = TRIS.find((t) => t.v === reglages.tri) || TRIS[0];
+  const triees = [...liste].sort(tri.f);
+  const consignesEnregistrees = brouillon.trim() === (reglages.consignes || "");
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, sel && sel.y > 0 && !ouvert && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      className: "robot-bouton",
+      key: sel.n,
+      style: { left: sel.x + "px", top: sel.y + "px" },
+      onMouseDown: (e) => e.preventDefault(),
+      onClick: ouvrirAvecSelection,
+      "aria-label": "Poser une question au petit robot sur le texte sélectionné"
+    },
+    /* @__PURE__ */ React.createElement("span", { className: "robot robot-arrive" }, /* @__PURE__ */ React.createElement(RobotPixels, { taille: 36 }))
+  ), ouvert && /* @__PURE__ */ React.createElement("section", { className: "robot-fenetre", role: "dialog", "aria-label": "Le petit robot", tabIndex: -1, ref: fenetre }, /* @__PURE__ */ React.createElement("header", { className: "robot-tete" }, /* @__PURE__ */ React.createElement("button", { type: "button", className: "robot-avatar", onClick: () => setHumeur(envoi ? "reflechit" : "joie"), "aria-label": "Faire sauter le petit robot" }, /* @__PURE__ */ React.createElement("span", { className: "robot robot-" + humeur, key: conv ? conv.id : "liste" }, /* @__PURE__ */ React.createElement(RobotPixels, { taille: 44 }))), /* @__PURE__ */ React.createElement("p", { className: "robot-nom" }, vue === "liste" ? "Conversations" : "Le petit robot"), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      className: "bouton-icone robot-consignes-bouton" + (voirConsignes ? " actif" : ""),
+      "aria-pressed": voirConsignes,
+      "aria-label": "Ma façon de répondre",
+      onClick: () => {
+        setBrouillon(reglages.consignes || "");
+        setVoirConsignes((v) => !v);
+      }
+    },
+    /* @__PURE__ */ React.createElement(IcReglages, { taille: 20 })
+  ), vue === "chat" ? /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton-icone robot-liste-bouton", "aria-label": "Conversations de cette page", onClick: () => setVue("liste") }, /* @__PURE__ */ React.createElement(IcListe, { taille: 20 })) : conv && /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton-icone robot-retour-bouton", "aria-label": "Revenir à la conversation", onClick: () => setVue("chat") }, /* @__PURE__ */ React.createElement(IcBulle, { taille: 20 })), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton-icone", "aria-label": "Fermer", onClick: () => setOuvert(false) }, /* @__PURE__ */ React.createElement(IcX, { taille: 20 }))), voirConsignes && /* @__PURE__ */ React.createElement("div", { className: "robot-consignes" }, /* @__PURE__ */ React.createElement("label", { htmlFor: "robot-consignes" }, "Ma façon de répondre"), /* @__PURE__ */ React.createElement("p", { className: "robot-aide" }, fr("Le robot suit ces consignes dans toutes ses réponses. Elles restent sur cet appareil.")), /* @__PURE__ */ React.createElement(
+    "textarea",
+    {
+      id: "robot-consignes",
+      rows: 3,
+      value: brouillon,
+      onChange: (e) => setBrouillon(e.target.value),
+      placeholder: "Par exemple : réponds en trois phrases, avec un exemple concret."
+    }
+  ), /* @__PURE__ */ React.createElement("div", { className: "robot-ligne" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      className: "bouton bouton-principal",
+      disabled: consignesEnregistrees,
+      onClick: () => majReglages({ consignes: brouillon.trim() })
+    },
+    consignesEnregistrees && reglages.consignes ? "Enregistré" : "Enregistrer"
+  ))), vue === "chat" && conv && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "robot-fil", ref: fil, "aria-live": "polite" }, /* @__PURE__ */ React.createElement("div", { className: "robot-bulle robot-de-robot" }, /* @__PURE__ */ React.createElement("p", null, fr(conv.bienvenue))), !service && /* @__PURE__ */ React.createElement("div", { className: "robot-bulle robot-de-robot robot-connexion" }, /* @__PURE__ */ React.createElement("p", null, fr("Pour te répondre, j’ai besoin d’être connecté à une IA. Ça se règle une seule fois, dans le carnet de révision :")), /* @__PURE__ */ React.createElement("ol", null, /* @__PURE__ */ React.createElement("li", null, fr("ouvre le panneau « Assistant intelligent » ;")), /* @__PURE__ */ React.createElement("li", null, fr("colle l’adresse HTTPS de ton service IA, le petit serveur qui garde ta clé à l’abri ;")), /* @__PURE__ */ React.createElement("li", null, fr("touche « Enregistrer et tester la connexion », puis reviens ici."))), /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-principal", href: "revisions.html" }, "Connecter une IA")), conv.messages.map((m, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "robot-bulle " + (m.role === "user" ? "robot-de-moi" : "robot-de-robot") }, m.role === "user" ? /* @__PURE__ */ React.createElement("p", null, m.t) : /* @__PURE__ */ React.createElement(TexteRobot, { t: m.t }))), envoi && /* @__PURE__ */ React.createElement("div", { className: "robot-bulle robot-de-robot robot-attente", role: "status", "aria-label": "Le robot réfléchit" }, /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null)), erreur && /* @__PURE__ */ React.createElement("p", { className: "robot-erreur", role: "alert" }, fr(erreur))), service && /* @__PURE__ */ React.createElement("form", { className: "robot-saisie", onSubmit: (e) => {
+    e.preventDefault();
+    envoyer(question);
+  } }, /* @__PURE__ */ React.createElement("div", { className: "robot-rapides" }, RAPIDES.map((r) => /* @__PURE__ */ React.createElement("button", { type: "button", key: r.l, className: "robot-rapide", disabled: envoi, onClick: () => envoyer(r.q) }, r.l))), /* @__PURE__ */ React.createElement("div", { className: "robot-ligne" }, /* @__PURE__ */ React.createElement(
+    "textarea",
+    {
+      rows: 1,
+      value: question,
+      onChange: (e) => setQuestion(e.target.value),
+      placeholder: "Ta question…",
+      "aria-label": "Ta question au robot",
+      onKeyDown: (e) => {
+        if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+          e.preventDefault();
+          envoyer(question);
+        }
+      }
+    }
+  ), /* @__PURE__ */ React.createElement("button", { type: "submit", className: "bouton bouton-principal robot-envoyer", disabled: envoi || !question.trim(), "aria-label": "Envoyer" }, /* @__PURE__ */ React.createElement(IcEnvoyer, { taille: 20 }))))), (vue === "liste" || !conv) && /* @__PURE__ */ React.createElement("div", { className: "robot-fil robot-liste", ref: fil }, !liste.length ? /* @__PURE__ */ React.createElement("p", { className: "robot-aide" }, fr("Aucune conversation sur cette page pour l’instant. Sélectionne un passage, puis touche le robot.")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("label", { className: "robot-tri" }, /* @__PURE__ */ React.createElement("span", null, "Trier"), /* @__PURE__ */ React.createElement("select", { value: tri.v, onChange: (e) => majReglages({ tri: e.target.value }) }, TRIS.map((t) => /* @__PURE__ */ React.createElement("option", { key: t.v, value: t.v }, t.l)))), /* @__PURE__ */ React.createElement("ul", null, triees.map((x) => {
+    const nq = x.messages.filter((m) => m.role === "user").length;
+    return /* @__PURE__ */ React.createElement("li", { key: x.id, className: "robot-conv" }, /* @__PURE__ */ React.createElement("button", { type: "button", className: "robot-conv-ouvrir", onClick: () => rouvrir(x) }, /* @__PURE__ */ React.createElement("strong", null, titreConversation(x)), /* @__PURE__ */ React.createElement("span", null, DATE_ROBOT.format(new Date(x.modifieLe)), " · ", nq, " question", nq > 1 ? "s" : "")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        className: "bouton-icone robot-conv-supprimer",
+        onClick: () => supprimer(x),
+        "aria-label": `Supprimer la conversation « ${titreConversation(x)} »`
+      },
+      /* @__PURE__ */ React.createElement(IcCorbeille, { taille: 19 })
+    ));
+  })), liste.length >= MAX_PAR_PAGE && /* @__PURE__ */ React.createElement("p", { className: "robot-aide" }, "Seules les ", MAX_PAR_PAGE, " conversations les plus récentes de la page sont gardées.")), /* @__PURE__ */ React.createElement("div", { className: "robot-actions" }, /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-principal", onClick: () => nouvelle("") }, /* @__PURE__ */ React.createElement(IcPlus, { taille: 18 }), "Nouvelle conversation"), liste.length > 0 && /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-contour robot-tout-supprimer", onClick: toutSupprimer }, /* @__PURE__ */ React.createElement(IcCorbeille, { taille: 18 }), "Tout supprimer")))));
 }
 function App() {
   const [etat, setEtat] = useEtat();
@@ -495,6 +899,6 @@ function App() {
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("a", { className: "lien-evitement", href: "#contenu", onClick: (e) => {
     e.preventDefault();
     document.getElementById("contenu").focus();
-  } }, "Aller au contenu"), /* @__PURE__ */ React.createElement(Barre, { etat, setEtat, route }), /* @__PURE__ */ React.createElement("main", { id: "contenu", tabIndex: -1 }, /* @__PURE__ */ React.createElement("div", { className: "entree", key: cle }, vue)), /* @__PURE__ */ React.createElement("div", { className: "toast-zone", "aria-live": "polite" }, message && /* @__PURE__ */ React.createElement("div", { className: "toast", key: message.k }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" }), message.t)));
+  } }, "Aller au contenu"), /* @__PURE__ */ React.createElement(Barre, { etat, setEtat, route }), /* @__PURE__ */ React.createElement("main", { id: "contenu", tabIndex: -1 }, /* @__PURE__ */ React.createElement("div", { className: "entree", key: cle }, vue)), /* @__PURE__ */ React.createElement("div", { className: "toast-zone", "aria-live": "polite" }, message && /* @__PURE__ */ React.createElement("div", { className: "toast", key: message.k }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" }), message.t)), /* @__PURE__ */ React.createElement(Robot, { route }));
 }
 createRoot(document.getElementById("app")).render(/* @__PURE__ */ React.createElement(App, null));
