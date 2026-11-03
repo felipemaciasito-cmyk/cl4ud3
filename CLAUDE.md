@@ -143,14 +143,14 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   l’appli la rend insécable. Pas d’emoji.
 - Les prompts sont aussi en français, et demandent une réponse en français quand ce n’est pas évident.
 
-## 6. Le projet fil rouge : `labo-claude-code`
+## 6. Le projet fil rouge : `SPECIFICODE`
 
 Les exercices pratiques continuent dans le même dépôt et la même appli, le carnet de courses de
 livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un nouveau projet.
 
 | Cours · leçon | Ce que le labo contient après l’exercice |
 |---|---|
-| 101 · 3 | Dépôt public `labo-claude-code` avec un README, relié à claude.ai/code |
+| 101 · 3 | Dépôt public `SPECIFICODE` avec un README, relié à claude.ai/code |
 | 101 · 4 | `index.html` : carnet de courses (date, km, €), totaux en km, € et €/km ; en ligne sur GitHub Pages |
 | 101 · 5 | Courses gardées dans le localStorage ; totaux dans `calculs.js`, testés avec `node --test` |
 | 101 · 7 | Bugs ou cas limites corrigés, chacun avec un test écrit d’abord |

@@ -86,9 +86,9 @@ export const LECONS = [
       "/goal fait continuer Claude jusqu’à une condition prouvée dans la conversation.",
     ],
     exercice: {
-      intro: "On reprend `labo-claude-code` là où Claude Code 101 l’a laissé (Claude Code 101, leçon 12). Nouvelle fonctionnalité : les totaux du mois en cours, au-dessus de la liste.",
+      intro: "On reprend `SPECIFICODE` là où Claude Code 101 l’a laissé (Claude Code 101, leçon 12). Nouvelle fonctionnalité : les totaux du mois en cours, au-dessus de la liste.",
       etapes: [
-        { t: "Nouvelle session sur `labo-claude-code`, en mode **Plan** :", p: "Lis d’abord le code de l’appli et ses tests. Je veux afficher au-dessus de la liste les totaux du mois en cours : km, euros et euros par km. Propose un plan : les fichiers touchés, la fonction de calcul à ajouter et les tests à écrire dans le fichier de test existant. Respecte CLAUDE.md. Ne modifie rien." },
+        { t: "Nouvelle session sur `SPECIFICODE`, en mode **Plan** :", p: "Lis d’abord le code de l’appli et ses tests. Je veux afficher au-dessus de la liste les totaux du mois en cours : km, euros et euros par km. Propose un plan : les fichiers touchés, la fonction de calcul à ajouter et les tests à écrire dans le fichier de test existant. Respecte CLAUDE.md. Ne modifie rien." },
         { t: "Lis le plan en entier. Demande ce qui manque, par exemple :", p: "Affiche ces totaux dans un encadré, avec le nom du mois en français, comme Novembre 2026." },
         { t: "Valide le plan. Si on te propose un mode, choisis « Accepter automatiquement les modifications ». Laisse Claude coder." },
         { t: "Quand il a fini, fixe-lui un objectif vérifiable :", p: "/goal node --test réussit, un test couvre les totaux du mois en cours, un autre couvre un mois sans aucune course, et la sortie complète de node --test est affichée dans la conversation", a: "Observe : si la condition est déjà remplie, l’évaluateur le confirme aussitôt. Sinon, Claude enchaîne les tours sans que tu le relances, jusqu’à ce qu’elle le soit." },
@@ -374,8 +374,8 @@ export const LECONS = [
       intro: "Tu vas créer une tâche planifiée qui contrôle ton labo chaque semaine. Elle ne modifie rien : elle fait un rapport.",
       etapes: [
         { t: "Dans Safari, ouvre claude.ai/code/routines. Touche « New task » (ou « New routine », selon ton compte). Si un menu propose « Create with Claude » et « Set up manually », choisis « Set up manually »." },
-        { t: "Nomme la tâche « Contrôle du labo », puis colle ce prompt :", p: "Tu contrôles le dépôt labo-claude-code. Lance node --test et lis la sortie complète. Vérifie que JOURNAL.md contient une entrée de moins de 30 jours. Ne modifie aucun fichier et ne pousse rien. Termine par un rapport en français de 5 lignes au plus : RÉUSSI ou ÉCHEC pour les tests avec leur nombre, puis ce qu’il faudrait faire ensuite." },
-        { t: "Dans la ligne « Trigger », choisis « Schedule » et une fréquence hebdomadaire, par exemple le lundi à 9 h 07 : une heure pile peut démarrer avec quelques minutes de retard. Dans « Advanced settings », choisis le dépôt `labo-claude-code` et garde l’environnement par défaut. Retire les connecteurs dont la tâche n’a pas besoin, puis touche « Create »." },
+        { t: "Nomme la tâche « Contrôle du labo », puis colle ce prompt :", p: "Tu contrôles le dépôt SPECIFICODE. Lance node --test et lis la sortie complète. Vérifie que JOURNAL.md contient une entrée de moins de 30 jours. Ne modifie aucun fichier et ne pousse rien. Termine par un rapport en français de 5 lignes au plus : RÉUSSI ou ÉCHEC pour les tests avec leur nombre, puis ce qu’il faudrait faire ensuite." },
+        { t: "Dans la ligne « Trigger », choisis « Schedule » et une fréquence hebdomadaire, par exemple le lundi à 9 h 07 : une heure pile peut démarrer avec quelques minutes de retard. Dans « Advanced settings », choisis le dépôt `SPECIFICODE` et garde l’environnement par défaut. Retire les connecteurs dont la tâche n’a pas besoin, puis touche « Create »." },
         { t: "Sur la page de la tâche, touche « Run now » pour la lancer tout de suite. Quand l’exécution apparaît dans « History », ouvre-la.", a: "Lis la session : quelles commandes Claude a-t-il lancées ? Le rapport tient-il en 5 lignes ? Le dépôt est-il resté intact ?" },
         { t: "Décide : garde la tâche active, ou suspends-la avec l’interrupteur en haut de sa page. Chaque exécution consomme ton quota comme une session." },
       ],
