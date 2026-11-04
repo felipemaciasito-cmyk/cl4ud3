@@ -183,7 +183,18 @@ function copierSecours(txt) {
     return false;
   }
 }
-function Prompt({ texte }) {
+const ENVIRONNEMENT_PAR_DEFAUT = "Claude Code sur le web (claude.ai/code)";
+function ConfigurationPrompt({ cfg }) {
+  const lignes = [
+    ["Environnement", cfg.env || ENVIRONNEMENT_PAR_DEFAUT],
+    ["Session", cfg.session],
+    ["Dépôt", cfg.depot],
+    ["Branche", cfg.branche],
+    ["Autorisations", cfg.autorisations]
+  ];
+  return /* @__PURE__ */ React.createElement("dl", { className: "prompt-cfg", "aria-label": "Configuration de la conversation" }, lignes.map(([nom, valeur]) => /* @__PURE__ */ React.createElement("div", { key: nom }, /* @__PURE__ */ React.createElement("dt", null, nom), /* @__PURE__ */ React.createElement("dd", null, valeur))));
+}
+function Prompt({ texte, cfg }) {
   const [etat, setEtat] = useState("repos");
   const minuteur = useRef(null);
   useEffect(() => () => clearTimeout(minuteur.current), []);
@@ -194,7 +205,7 @@ function Prompt({ texte }) {
       minuteur.current = setTimeout(() => setEtat("repos"), 1800);
     });
   };
-  return /* @__PURE__ */ React.createElement("figure", { className: "prompt" }, /* @__PURE__ */ React.createElement("div", { className: "prompt-tete" }, /* @__PURE__ */ React.createElement("span", null, "À envoyer à Claude"), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, cfg && /* @__PURE__ */ React.createElement(ConfigurationPrompt, { cfg }), /* @__PURE__ */ React.createElement("figure", { className: "prompt" }, /* @__PURE__ */ React.createElement("div", { className: "prompt-tete" }, /* @__PURE__ */ React.createElement("span", null, "À envoyer à Claude"), /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -204,7 +215,7 @@ function Prompt({ texte }) {
     },
     etat === "copie" ? /* @__PURE__ */ React.createElement(IcCheck, { taille: 16 }) : /* @__PURE__ */ React.createElement(IcCopie, { taille: 16 }),
     /* @__PURE__ */ React.createElement("span", null, etat === "copie" ? "Copié" : etat === "echec" ? "Sélectionne le texte" : "Copier")
-  )), /* @__PURE__ */ React.createElement("pre", null, texte));
+  )), /* @__PURE__ */ React.createElement("pre", null, texte)));
 }
 function Depliable({ titre, children }) {
   return /* @__PURE__ */ React.createElement("details", { className: "depliable" }, /* @__PURE__ */ React.createElement("summary", null, /* @__PURE__ */ React.createElement("span", null, titre), /* @__PURE__ */ React.createElement(IcChevron, { taille: 18 })), /* @__PURE__ */ React.createElement("div", { className: "depliable-corps" }, children));
@@ -342,7 +353,7 @@ function Classer({ cours, lessonId }) {
   })), /* @__PURE__ */ React.createElement("p", { className: "classer-score" }, justes, " sur ", CLASSER.length, " bien placées"));
 }
 function Exercice({ ex, cours, lessonId }) {
-  return /* @__PURE__ */ React.createElement("section", { className: "exercice", "aria-labelledby": "titre-exercice" }, /* @__PURE__ */ React.createElement("h2", { id: "titre-exercice" }, "Exercice"), ex.intro && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: ex.intro })), ex.classer && cours.CLASSER && cours.PHASES && /* @__PURE__ */ React.createElement(Classer, { cours, lessonId }), ex.etapes.length > 0 && /* @__PURE__ */ React.createElement("ol", { className: "exercice-etapes" }, ex.etapes.map((e, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement("span", { className: "exercice-num", "aria-hidden": "true" }, i + 1), /* @__PURE__ */ React.createElement("div", { className: "exercice-contenu" }, /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.t })), e.p && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p }), e.a && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.a })), e.p2 && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p2 }))))), ex.note && /* @__PURE__ */ React.createElement("p", { className: "note" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.note })), (ex.details || []).map((d, i) => /* @__PURE__ */ React.createElement(Depliable, { key: i, titre: d.titre }, d.t.map((x, j) => /* @__PURE__ */ React.createElement("p", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: x }))), d.p && /* @__PURE__ */ React.createElement(Prompt, { texte: d.p }))));
+  return /* @__PURE__ */ React.createElement("section", { className: "exercice", "aria-labelledby": "titre-exercice" }, /* @__PURE__ */ React.createElement("h2", { id: "titre-exercice" }, "Exercice"), ex.intro && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: ex.intro })), ex.classer && cours.CLASSER && cours.PHASES && /* @__PURE__ */ React.createElement(Classer, { cours, lessonId }), ex.etapes.length > 0 && /* @__PURE__ */ React.createElement("ol", { className: "exercice-etapes" }, ex.etapes.map((e, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement("span", { className: "exercice-num", "aria-hidden": "true" }, i + 1), /* @__PURE__ */ React.createElement("div", { className: "exercice-contenu" }, /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.t })), e.p && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p, cfg: e.cfg }), e.a && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.a })), e.p2 && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p2, cfg: e.cfg2 }))))), ex.note && /* @__PURE__ */ React.createElement("p", { className: "note" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.note })), (ex.details || []).map((d, i) => /* @__PURE__ */ React.createElement(Depliable, { key: i, titre: d.titre }, d.t.map((x, j) => /* @__PURE__ */ React.createElement("p", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: x }))), d.p && /* @__PURE__ */ React.createElement(Prompt, { texte: d.p, cfg: d.cfg }))));
 }
 function Lecon({ cours: c, id, etat, setEtat, toast }) {
   const l = c.LECONS[id - 1];

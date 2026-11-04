@@ -209,7 +209,26 @@ function copierSecours(txt) {
   }
 }
 
-function Prompt({ texte }) {
+const ENVIRONNEMENT_PAR_DEFAUT = "Claude Code sur le web (claude.ai/code)";
+
+function ConfigurationPrompt({ cfg }) {
+  const lignes = [
+    ["Environnement", cfg.env || ENVIRONNEMENT_PAR_DEFAUT],
+    ["Session", cfg.session],
+    ["Dépôt", cfg.depot],
+    ["Branche", cfg.branche],
+    ["Autorisations", cfg.autorisations],
+  ];
+  return (
+    <dl className="prompt-cfg" aria-label="Configuration de la conversation">
+      {lignes.map(([nom, valeur]) => (
+        <div key={nom}><dt>{nom}</dt><dd>{valeur}</dd></div>
+      ))}
+    </dl>
+  );
+}
+
+function Prompt({ texte, cfg }) {
   const [etat, setEtat] = useState("repos");
   const minuteur = useRef(null);
   useEffect(() => () => clearTimeout(minuteur.current), []);
@@ -221,17 +240,20 @@ function Prompt({ texte }) {
     });
   };
   return (
-    <figure className="prompt">
-      <div className="prompt-tete">
-        <span>À envoyer à Claude</span>
-        <button type="button" className={"copier" + (etat === "copie" ? " est-copie" : "")} onClick={copier}
-          aria-label={etat === "copie" ? "Texte copié" : "Copier le texte"}>
-          {etat === "copie" ? <IcCheck taille={16} /> : <IcCopie taille={16} />}
-          <span>{etat === "copie" ? "Copié" : etat === "echec" ? "Sélectionne le texte" : "Copier"}</span>
-        </button>
-      </div>
-      <pre>{texte}</pre>
-    </figure>
+    <>
+      {cfg && <ConfigurationPrompt cfg={cfg} />}
+      <figure className="prompt">
+        <div className="prompt-tete">
+          <span>À envoyer à Claude</span>
+          <button type="button" className={"copier" + (etat === "copie" ? " est-copie" : "")} onClick={copier}
+            aria-label={etat === "copie" ? "Texte copié" : "Copier le texte"}>
+            {etat === "copie" ? <IcCheck taille={16} /> : <IcCopie taille={16} />}
+            <span>{etat === "copie" ? "Copié" : etat === "echec" ? "Sélectionne le texte" : "Copier"}</span>
+          </button>
+        </div>
+        <pre>{texte}</pre>
+      </figure>
+    </>
   );
 }
 
@@ -551,9 +573,9 @@ function Exercice({ ex, cours, lessonId }) {
               <span className="exercice-num" aria-hidden="true">{i + 1}</span>
               <div className="exercice-contenu">
                 <p><Texte t={e.t} /></p>
-                {e.p && <Prompt texte={e.p} />}
+                {e.p && <Prompt texte={e.p} cfg={e.cfg} />}
                 {e.a && <p><Texte t={e.a} /></p>}
-                {e.p2 && <Prompt texte={e.p2} />}
+                {e.p2 && <Prompt texte={e.p2} cfg={e.cfg2} />}
               </div>
             </li>
           ))}
@@ -563,7 +585,7 @@ function Exercice({ ex, cours, lessonId }) {
       {(ex.details || []).map((d, i) => (
         <Depliable key={i} titre={d.titre}>
           {d.t.map((x, j) => <p key={j}><Texte t={x} /></p>)}
-          {d.p && <Prompt texte={d.p} />}
+          {d.p && <Prompt texte={d.p} cfg={d.cfg} />}
         </Depliable>
       ))}
     </section>

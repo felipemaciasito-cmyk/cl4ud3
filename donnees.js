@@ -162,7 +162,7 @@ export const LECONS = [
         { t: "Ouvre claude.ai/code dans Safari, ou l’onglet Code de l’appli Claude, et connecte-toi avec ton compte Claude." },
         { t: "Accepte de connecter GitHub : installe l’application Claude GitHub et donne-lui accès à `SPECIFICODE`." },
         { t: "Quand on te propose de créer un environnement, garde les réglages par défaut (accès réseau « Trusted ») et valide." },
-        { t: "Sous la zone de saisie, choisis le dépôt `SPECIFICODE`, puis envoie :", p: "Décris-moi ce dépôt en une phrase et liste ses fichiers. Ne modifie rien." },
+        { t: "Sous la zone de saisie, choisis le dépôt `SPECIFICODE`, puis envoie :", p: "Décris-moi ce dépôt en une phrase et liste ses fichiers. Ne modifie rien.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
       ],
       note: "Si Claude te parle du README, tout est prêt. Si aucun dépôt n’apparaît, vérifie sur GitHub que le compte connecté a bien accès au dépôt.",
     },
@@ -211,8 +211,8 @@ export const LECONS = [
       intro: "Tu vas faire construire une petite appli : un carnet pour noter des courses de livraison.",
       etapes: [
         { t: "Nouvelle session sur `SPECIFICODE`. Dans le menu des modes, à côté de la zone de saisie, choisis **Plan**." },
-        { t: "Envoie :", p: "Je veux une petite appli web en un seul fichier index.html, en français, pour noter mes courses de livraison : pour chaque course, la distance en km et le montant gagné en euros. Affiche la liste des courses et les totaux : km, euros et euros par km. Pas de bibliothèque externe, design simple et lisible sur iPad. Propose-moi d’abord un plan." },
-        { t: "Lis le plan et demande un changement, par exemple :", p: "Ajoute la date de chaque course." },
+        { t: "Envoie :", p: "Je veux une petite appli web en un seul fichier index.html, en français, pour noter mes courses de livraison : pour chaque course, la distance en km et le montant gagné en euros. Affiche la liste des courses et les totaux : km, euros et euros par km. Pas de bibliothèque externe, design simple et lisible sur iPad. Propose-moi d’abord un plan.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
+        { t: "Lis le plan et demande un changement, par exemple :", p: "Ajoute la date de chaque course.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
         { t: "Valide le plan et laisse Claude coder. Passe en « Accepter automatiquement les modifications » si on te le demande." },
         { t: "Ouvre le diff. Touche une ligne de texte à reformuler et laisse un commentaire, par exemple « écris plutôt Total gagné ». Envoie, puis vérifie que la correction est faite." },
         { t: PR_FUSION },
@@ -252,10 +252,10 @@ export const LECONS = [
     exercice: {
       intro: "Nouvelle fonctionnalité : les courses doivent rester enregistrées quand tu fermes la page.",
       etapes: [
-        { t: "**Explorer.** Nouvelle session, mode Plan :", p: "Lis index.html et explique-moi comment les courses sont stockées aujourd’hui et ce qui se passe quand je recharge la page. Ne modifie rien." },
-        { t: "**Planifier.** Toujours en mode Plan :", p: "Propose un plan pour que les courses restent enregistrées dans le navigateur (localStorage) après la fermeture de la page. Dis quelles parties du code changent et comment tu vérifieras que ça marche. Si c’est utile, sors les calculs des totaux dans un fichier calculs.js pour pouvoir les tester." },
-        { t: "**Coder.** Passe en « Accepter automatiquement les modifications » :", p: "Applique le plan. Ajoute un fichier de test qui vérifie le calcul des totaux, lance-le avec node --test et montre-moi la sortie complète." },
-        { t: "**Valider.**", p: "Fais un commit avec un message clair qui résume le changement.", a: PR_FUSION },
+        { t: "**Explorer.** Nouvelle session, mode Plan :", p: "Lis index.html et explique-moi comment les courses sont stockées aujourd’hui et ce qui se passe quand je recharge la page. Ne modifie rien.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
+        { t: "**Planifier.** Toujours en mode Plan :", p: "Propose un plan pour que les courses restent enregistrées dans le navigateur (localStorage) après la fermeture de la page. Dis quelles parties du code changent et comment tu vérifieras que ça marche. Si c’est utile, sors les calculs des totaux dans un fichier calculs.js pour pouvoir les tester.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
+        { t: "**Coder.** Passe en « Accepter automatiquement les modifications » :", p: "Applique le plan. Ajoute un fichier de test qui vérifie le calcul des totaux, lance-le avec node --test et montre-moi la sortie complète.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
+        { t: "**Valider.**", p: "Fais un commit avec un message clair qui résume le changement.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" }, a: PR_FUSION },
         { t: "Teste en vrai sur ton appli en ligne : ajoute une course, ferme l’onglet, rouvre-le. La course doit toujours être là." },
       ],
     },
@@ -295,8 +295,8 @@ export const LECONS = [
     ],
     exercice: {
       etapes: [
-        { t: "Retourne dans la session de la leçon 5 (barre latérale de claude.ai/code) et tape :", p: "/context", a: "Repère ce qui prend le plus de place." },
-        { t: "Tape :", p: "/compact garde seulement les décisions sur l’enregistrement des courses et la commande de test" },
+        { t: "Retourne dans la session de la leçon 5 (barre latérale de claude.ai/code) et tape :", p: "/context", cfg: { session: "La session de la leçon 5", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" }, a: "Repère ce qui prend le plus de place." },
+        { t: "Tape :", p: "/compact garde seulement les décisions sur l’enregistrement des courses et la commande de test", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
         { t: "Retape `/context` et compare avec la première fois." },
         { t: "Pour la leçon suivante, ouvre une nouvelle session depuis la barre latérale. Tu pourrais aussi taper `/clear` : la conversation repartirait de zéro, dans la même session." },
       ],
@@ -336,13 +336,13 @@ export const LECONS = [
     ],
     exercice: {
       etapes: [
-        { t: "Nouvelle session :", p: "Tu relis un code que tu n’as pas écrit. Analyse index.html et calculs.js : signale uniquement les bugs qui changent un résultat (calculs, enregistrement, affichage), ignore le style. Pour chaque bug : fichier, ligne et explication." },
-        { t: "Ensuite :", p: "Pour chaque bug confirmé, écris d’abord un test qui échoue, puis corrige, relance node --test et montre-moi la sortie complète." },
+        { t: "Nouvelle session :", p: "Tu relis un code que tu n’as pas écrit. Analyse index.html et calculs.js : signale uniquement les bugs qui changent un résultat (calculs, enregistrement, affichage), ignore le style. Pour chaque bug : fichier, ligne et explication.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
+        { t: "Ensuite :", p: "Pour chaque bug confirmé, écris d’abord un test qui échoue, puis corrige, relance node --test et montre-moi la sortie complète.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
         { t: "Ouvre le diff et commente au moins une ligne que tu ne comprends pas, avec : « explique-moi cette ligne simplement »." },
         { t: PR_FUSION },
       ],
       details: [
-        { titre: "Et si Claude ne trouve aucun bug ?", t: ["C’est possible. Demande alors :"], p: "Quels cas limites ne sont pas testés ? Par exemple un montant vide, une distance à 0, un nombre négatif. Ajoute les tests qui manquent et corrige ce qui casse." },
+        { titre: "Et si Claude ne trouve aucun bug ?", t: ["C’est possible. Demande alors :"], p: "Quels cas limites ne sont pas testés ? Par exemple un montant vide, une distance à 0, un nombre négatif. Ajoute les tests qui manquent et corrige ce qui casse.", cfg: { session: "Même session que l’étape 2", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
       ],
     },
   },
@@ -385,11 +385,11 @@ export const LECONS = [
     ],
     exercice: {
       etapes: [
-        { t: "Nouvelle session. Tape `/init`. Si la commande n’est pas reconnue, envoie plutôt :", p: "Crée un CLAUDE.md court (moins de 25 lignes) pour ce projet : la commande de test, nos règles (interface en français, pas de bibliothèque externe) et les pièges. Ne décris pas l’organisation des fichiers." },
-        { t: "Lis le résultat, puis :", p: "Enlève de CLAUDE.md toutes les lignes qui décrivent ce qui se voit déjà dans le code." },
-        { t: "Ajoute une règle :", p: "Ajoute dans CLAUDE.md : chaque montant s’affiche avec le symbole € après le nombre et une virgule, comme 12,50 €." },
+        { t: "Nouvelle session. Tape `/init`. Si la commande n’est pas reconnue, envoie plutôt :", p: "Crée un CLAUDE.md court (moins de 25 lignes) pour ce projet : la commande de test, nos règles (interface en français, pas de bibliothèque externe) et les pièges. Ne décris pas l’organisation des fichiers.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
+        { t: "Lis le résultat, puis :", p: "Enlève de CLAUDE.md toutes les lignes qui décrivent ce qui se voit déjà dans le code.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
+        { t: "Ajoute une règle :", p: "Ajoute dans CLAUDE.md : chaque montant s’affiche avec le symbole € après le nombre et une virgule, comme 12,50 €.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
         { t: PR_FUSION },
-        { t: "Nouvelle session : tape `/context` et vérifie que CLAUDE.md est chargé. Puis :", p: "Ajoute une ligne qui affiche le gain moyen par course.", a: "Regarde si la règle des montants est respectée sans que tu la répètes." },
+        { t: "Nouvelle session : tape `/context` et vérifie que CLAUDE.md est chargé. Puis :", p: "Ajoute une ligne qui affiche le gain moyen par course.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" }, a: "Regarde si la règle des montants est respectée sans que tu la répètes." },
       ],
     },
   },
@@ -432,9 +432,9 @@ export const LECONS = [
     ],
     exercice: {
       etapes: [
-        { t: "Nouvelle session :", p: "Crée un sous-agent dans .claude/agents/relecteur.md. Il relit les changements, n’a accès qu’aux outils Read, Grep et Glob, signale uniquement les bugs qui changent un résultat avec le fichier et la ligne, ignore le style et répond en français." },
+        { t: "Nouvelle session :", p: "Crée un sous-agent dans .claude/agents/relecteur.md. Il relit les changements, n’a accès qu’aux outils Read, Grep et Glob, signale uniquement les bugs qui changent un résultat avec le fichier et la ligne, ignore le style et répond en français.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
         { t: PR_FUSION },
-        { t: "Nouvelle session :", p: "Ajoute un bouton pour supprimer une course. Ensuite, demande au sous-agent relecteur de vérifier tes changements, et corrige ce qu’il trouve." },
+        { t: "Nouvelle session :", p: "Ajoute un bouton pour supprimer une course. Ensuite, demande au sous-agent relecteur de vérifier tes changements, et corrige ce qu’il trouve.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
         { t: "Observe : Claude lance le relecteur, reçoit son résumé, puis corrige. Relis le diff, crée la PR et fusionne." },
       ],
     },
@@ -469,9 +469,9 @@ export const LECONS = [
     ],
     exercice: {
       etapes: [
-        { t: "Nouvelle session :", p: "Crée un skill dans .claude/skills/journal/SKILL.md : quand je tape /journal, tu ajoutes en haut de JOURNAL.md la date du jour et une ligne par changement visible fait pendant la session, en français simple. Mets disable-model-invocation: true." },
+        { t: "Nouvelle session :", p: "Crée un skill dans .claude/skills/journal/SKILL.md : quand je tape /journal, tu ajoutes en haut de JOURNAL.md la date du jour et une ligne par changement visible fait pendant la session, en français simple. Mets disable-model-invocation: true.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
         { t: PR_FUSION },
-        { t: "Nouvelle session. Fais un petit changement :", p: "Mets les totaux en gras.", a: "Puis tape :", p2: "/journal" },
+        { t: "Nouvelle session. Fais un petit changement :", p: "Mets les totaux en gras.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" }, a: "Puis tape :", p2: "/journal", cfg2: { session: "Même session que l’étape 3", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
         { t: "Ouvre le diff et vérifie le contenu de JOURNAL.md." },
       ],
     },
@@ -507,10 +507,10 @@ export const LECONS = [
     exercice: {
       intro: "Tu vas brancher ton labo sur le serveur MCP de la documentation officielle de Claude Code, hébergé par Anthropic.",
       etapes: [
-        { t: "Nouvelle session :", p: "Ajoute à la racine du dépôt un fichier .mcp.json qui déclare un serveur MCP HTTP nommé claude-code-docs, à l’adresse https://code.claude.com/docs/mcp." },
+        { t: "Nouvelle session :", p: "Ajoute à la racine du dépôt un fichier .mcp.json qui déclare un serveur MCP HTTP nommé claude-code-docs, à l’adresse https://code.claude.com/docs/mcp.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
         { t: PR_FUSION },
-        { t: "Nouvelle session :", p: "Quels serveurs MCP et quels outils as-tu à ta disposition dans cette session ?" },
-        { t: "Puis :", p: "Avec le serveur claude-code-docs, explique-moi en français ce qu’est un hook PreToolUse et dis-moi quelle page de la documentation tu as utilisée." },
+        { t: "Nouvelle session :", p: "Quels serveurs MCP et quels outils as-tu à ta disposition dans cette session ?", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
+        { t: "Puis :", p: "Avec le serveur claude-code-docs, explique-moi en français ce qu’est un hook PreToolUse et dis-moi quelle page de la documentation tu as utilisée.", cfg: { session: "Même session que l’étape 3", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
       ],
       note: "Si Claude ne voit pas le serveur, demande-lui de vérifier le format du fichier .mcp.json, puis ouvre une nouvelle session.",
     },
@@ -557,10 +557,10 @@ export const LECONS = [
     ],
     exercice: {
       etapes: [
-        { t: "Nouvelle session :", p: "Crée d’abord un fichier protege/LISEZMOI.md avec une phrase. Ensuite, écris dans .claude/settings.json un hook PreToolUse qui bloque toute modification de fichier dans le dossier protege/ avec le message « Dossier protégé : modification interdite »." },
+        { t: "Nouvelle session :", p: "Crée d’abord un fichier protege/LISEZMOI.md avec une phrase. Ensuite, écris dans .claude/settings.json un hook PreToolUse qui bloque toute modification de fichier dans le dossier protege/ avec le message « Dossier protégé : modification interdite ».", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
         { t: PR_FUSION },
-        { t: "Nouvelle session :", p: "Ajoute une ligne dans protege/LISEZMOI.md.", a: "Claude doit être bloqué et t’expliquer pourquoi." },
-        { t: "Bonus :", p: "Ajoute dans .claude/settings.json un hook PostToolUse qui formate avec Prettier chaque fichier modifié.", a: "Après fusion, dans une nouvelle session, demande une modification et regarde dans le diff si le fichier ressort bien formaté." },
+        { t: "Nouvelle session :", p: "Ajoute une ligne dans protege/LISEZMOI.md.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" }, a: "Claude doit être bloqué et t’expliquer pourquoi." },
+        { t: "Bonus :", p: "Ajoute dans .claude/settings.json un hook PostToolUse qui formate avec Prettier chaque fichier modifié.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" }, a: "Après fusion, dans une nouvelle session, demande une modification et regarde dans le diff si le fichier ressort bien formaté." },
       ],
       details: [
         { titre: "Pourquoi pas une simple ligne dans CLAUDE.md ?", t: [

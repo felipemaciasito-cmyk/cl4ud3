@@ -30,6 +30,7 @@ async function verifier() {
     : o && typeof o === "object" && Object.entries(o).forEach(([k, v]) =>
         k !== "texte" && lire(v, ou, brut || BRUT.includes(k)));
   const ids = new Set(), mots = new Map();
+  const CONF = ["session", "depot", "branche", "autorisations"]; // cfg de chaque prompt (cfg2 pour p2, cfg pour details)
 
   COURS.forEach((c, ci) => {
     const nc = c.titre || "Cours " + (ci + 1);
@@ -53,6 +54,10 @@ async function verifier() {
         .forEach((k) => l[k] || err.push(n + " : champ " + k + " manquant"));
       (l.blocs || []).forEach((b) => BLOCS.includes(b.type) || err.push(n + " : bloc inconnu " + b.type));
       if (!Array.isArray(l.exercice?.etapes)) err.push(n + " : exercice.etapes manquant");
+      const prompts = [...(l.exercice?.etapes || []).flatMap((e) => [[e.p, e.cfg], [e.p2, e.cfg2]]),
+        ...(l.exercice?.details || []).map((d) => [d.p, d.cfg])];
+      prompts.forEach(([texte, cfg]) => texte && (CONF.every((k) => cfg?.[k]?.trim())
+        || err.push(n + " : prompt sans configuration complète (session, depot, branche, autorisations)")));
       if (l.exercice?.classer && !(c.CLASSER && c.PHASES)) err.push(n + " : classer demande CLASSER et PHASES dans le fichier du cours");
       if (l.exercice?.classer) classer++;
       lire(l, n, false);
