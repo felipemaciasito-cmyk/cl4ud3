@@ -364,16 +364,40 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
 @keyframes pop { 0% { transform: scale(.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
 .prompt pre { margin: 0; padding: .35rem .9rem .9rem; white-space: pre-wrap; font-family: var(--texte); font-size: 1.02rem; line-height: 1.5; }
 
-/* configuration de la conversation, au-dessus du prompt */
-.prompt-cfg {
-  margin: .6rem 0 0; padding: .5rem .8rem; display: grid; gap: .3rem .9rem;
-  background: var(--fond); border: 1px solid var(--bord); border-radius: var(--r-petit);
-  font-size: .82rem; line-height: 1.4; color: var(--discret);
+/* check-list « Avant d’envoyer » : configuration de la conversation, dépliée depuis l’en-tête */
+.prompt-tete { flex-wrap: wrap; }
+.prompt-actions { display: flex; align-items: center; gap: .4rem; margin-left: auto; }
+.cfg-bouton {
+  display: inline-flex; align-items: center; gap: .35rem; min-height: 44px; padding: 0 .7rem;
+  border-radius: .65rem; border: 1px solid var(--ambre-bord); background: transparent;
+  font-weight: 700; font-size: .85rem; cursor: pointer; transition: border-color .2s, color .2s;
 }
-.prompt-cfg > div { display: flex; flex-wrap: wrap; gap: .1rem .4rem; }
-.prompt-cfg dt { font-weight: 600; }
-.prompt-cfg dd { margin: 0; }
-@media (min-width: 700px) { .prompt-cfg { grid-template-columns: 1fr 1fr; } }
+.cfg-bouton[aria-expanded="true"] { background: var(--carte); }
+.cfg-bouton.tout-ok { border-color: var(--succes); color: var(--succes); }
+.cfg-compte { font-weight: 400; color: var(--discret); font-variant-numeric: tabular-nums; }
+.cfg-chevron { transition: transform .2s; }
+.cfg-bouton[aria-expanded="true"] .cfg-chevron { transform: rotate(180deg); }
+.cfg-panneau {
+  margin: .2rem .9rem .6rem; background: var(--carte); border: 1px solid var(--ambre-bord);
+  border-radius: var(--r-petit); overflow: hidden;
+}
+.cfg-panneau > p { padding: .5rem .75rem .2rem; font-size: .8rem; color: var(--discret); }
+.cfg-case {
+  display: flex; align-items: center; gap: .65rem; width: 100%; min-height: 44px; padding: .3rem .75rem;
+  border: 0; background: transparent; text-align: left; font-size: .88rem; line-height: 1.4;
+  color: var(--discret); cursor: pointer;
+}
+.cfg-case + .cfg-case { border-top: 1px solid var(--bord); }
+.cfg-case b { color: var(--encre); }
+.cfg-coche {
+  flex: none; width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--bord);
+  display: grid; place-items: center; color: transparent; transition: background-color .15s, border-color .15s;
+}
+.cfg-case[aria-pressed="true"] .cfg-coche { background: var(--succes); border-color: var(--succes); color: #fff; }
+/* étape sans prompt : seulement la check-list */
+.prompt-sans-texte { background: transparent; border-style: dashed; }
+.prompt-sans-texte .prompt-tete { padding-bottom: .4rem; }
+@media (prefers-reduced-motion: reduce) { .cfg-chevron, .cfg-coche, .cfg-bouton { transition: none; } }
 
 /* dépliable */
 .depliable { margin-top: 1.2rem; border: 1px solid var(--bord); border-radius: var(--r-moyen); background: var(--fond); }

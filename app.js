@@ -1,6 +1,6 @@
 import { React, createRoot } from "./vendor-react.js";
 import { COURS } from "./cours.js";
-const { useState, useEffect, useRef, useMemo, useCallback } = React;
+const { useState, useEffect, useRef, useMemo, useCallback, useId } = React;
 const PREMIER = COURS[0];
 const PLUSIEURS = COURS.length > 1;
 const TOTAL_LECONS = COURS.reduce((n, c) => n + c.LECONS.length, 0);
@@ -148,6 +148,7 @@ const IcReglages = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /
 const IcEnvoyer = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "m22 2-7 20-4-9-9-4Z" }), /* @__PURE__ */ React.createElement("path", { d: "M22 2 11 13" }));
 const IcPlus = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M5 12h14" }), /* @__PURE__ */ React.createElement("path", { d: "M12 5v14" }));
 const IcBulle = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "M7.9 20A9 9 0 1 0 4 16.1L2 22Z" }));
+const IcCoches = (p) => /* @__PURE__ */ React.createElement(Icone, { ...p }, /* @__PURE__ */ React.createElement("path", { d: "m3 7 2 2 4-4" }), /* @__PURE__ */ React.createElement("path", { d: "m3 17 2 2 4-4" }), /* @__PURE__ */ React.createElement("path", { d: "M13 7h8" }), /* @__PURE__ */ React.createElement("path", { d: "M13 17h8" }));
 function fr(s) {
   return String(s).replace(/« /g, "« ").replace(/ »/g, " »").replace(/ ([?!:;])/g, " $1");
 }
@@ -184,15 +185,41 @@ function copierSecours(txt) {
   }
 }
 const ENVIRONNEMENT_PAR_DEFAUT = "Claude Code sur le web (claude.ai/code)";
-function ConfigurationPrompt({ cfg }) {
+function useConfiguration(cfg) {
+  const id = useId();
+  const [ouvert, setOuvert] = useState(false);
+  const [coches, setCoches] = useState([]);
+  if (!cfg) return { bouton: null, panneau: null };
   const lignes = [
     ["Environnement", cfg.env || ENVIRONNEMENT_PAR_DEFAUT],
     ["Session", cfg.session],
     ["Dépôt", cfg.depot],
     ["Branche", cfg.branche],
-    ["Autorisations", cfg.autorisations]
+    ["Mode", cfg.autorisations]
   ];
-  return /* @__PURE__ */ React.createElement("dl", { className: "prompt-cfg", "aria-label": "Configuration de la conversation" }, lignes.map(([nom, valeur]) => /* @__PURE__ */ React.createElement("div", { key: nom }, /* @__PURE__ */ React.createElement("dt", null, nom), /* @__PURE__ */ React.createElement("dd", null, valeur))));
+  const n = coches.length, total = lignes.length;
+  const basculer = (nom) => setCoches((c) => c.includes(nom) ? c.filter((x) => x !== nom) : [...c, nom]);
+  const bouton = /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      className: "cfg-bouton" + (n === total ? " tout-ok" : ""),
+      "aria-expanded": ouvert,
+      "aria-controls": id,
+      onClick: () => setOuvert((o) => !o),
+      "aria-label": `Avant d’envoyer : configuration de la conversation, ${n} sur ${total} vérifiés`
+    },
+    n === total ? /* @__PURE__ */ React.createElement(IcCheck, { taille: 16 }) : /* @__PURE__ */ React.createElement(IcCoches, { taille: 16 }),
+    /* @__PURE__ */ React.createElement("span", null, "Avant d’envoyer"),
+    /* @__PURE__ */ React.createElement("span", { className: "cfg-compte" }, n, "/", total),
+    /* @__PURE__ */ React.createElement(IcChevron, { taille: 16, className: "cfg-chevron" })
+  );
+  const panneau = /* @__PURE__ */ React.createElement("div", { className: "cfg-panneau", id, hidden: !ouvert }, /* @__PURE__ */ React.createElement("p", null, "Vérifie ta conversation :"), lignes.map(([nom, valeur]) => /* @__PURE__ */ React.createElement("button", { key: nom, type: "button", className: "cfg-case", "aria-pressed": coches.includes(nom), onClick: () => basculer(nom) }, /* @__PURE__ */ React.createElement("span", { className: "cfg-coche", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 14 })), /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("b", null, nom), " : ", valeur))));
+  return { bouton, panneau };
+}
+function ConfigurationEtape({ cfg }) {
+  const { bouton, panneau } = useConfiguration(cfg);
+  return /* @__PURE__ */ React.createElement("div", { className: "prompt prompt-sans-texte" }, /* @__PURE__ */ React.createElement("div", { className: "prompt-tete" }, /* @__PURE__ */ React.createElement("span", null, "Dans la conversation"), /* @__PURE__ */ React.createElement("div", { className: "prompt-actions" }, bouton)), panneau);
 }
 function Prompt({ texte, cfg }) {
   const [etat, setEtat] = useState("repos");
@@ -205,7 +232,8 @@ function Prompt({ texte, cfg }) {
       minuteur.current = setTimeout(() => setEtat("repos"), 1800);
     });
   };
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, cfg && /* @__PURE__ */ React.createElement(ConfigurationPrompt, { cfg }), /* @__PURE__ */ React.createElement("figure", { className: "prompt" }, /* @__PURE__ */ React.createElement("div", { className: "prompt-tete" }, /* @__PURE__ */ React.createElement("span", null, "À envoyer à Claude"), /* @__PURE__ */ React.createElement(
+  const { bouton, panneau } = useConfiguration(cfg);
+  return /* @__PURE__ */ React.createElement("figure", { className: "prompt" }, /* @__PURE__ */ React.createElement("div", { className: "prompt-tete" }, /* @__PURE__ */ React.createElement("span", null, "À envoyer à Claude"), /* @__PURE__ */ React.createElement("div", { className: "prompt-actions" }, bouton, /* @__PURE__ */ React.createElement(
     "button",
     {
       type: "button",
@@ -215,7 +243,7 @@ function Prompt({ texte, cfg }) {
     },
     etat === "copie" ? /* @__PURE__ */ React.createElement(IcCheck, { taille: 16 }) : /* @__PURE__ */ React.createElement(IcCopie, { taille: 16 }),
     /* @__PURE__ */ React.createElement("span", null, etat === "copie" ? "Copié" : etat === "echec" ? "Sélectionne le texte" : "Copier")
-  )), /* @__PURE__ */ React.createElement("pre", null, texte)));
+  ))), panneau, /* @__PURE__ */ React.createElement("pre", null, texte));
 }
 function Depliable({ titre, children }) {
   return /* @__PURE__ */ React.createElement("details", { className: "depliable" }, /* @__PURE__ */ React.createElement("summary", null, /* @__PURE__ */ React.createElement("span", null, titre), /* @__PURE__ */ React.createElement(IcChevron, { taille: 18 })), /* @__PURE__ */ React.createElement("div", { className: "depliable-corps" }, children));
@@ -353,7 +381,7 @@ function Classer({ cours, lessonId }) {
   })), /* @__PURE__ */ React.createElement("p", { className: "classer-score" }, justes, " sur ", CLASSER.length, " bien placées"));
 }
 function Exercice({ ex, cours, lessonId }) {
-  return /* @__PURE__ */ React.createElement("section", { className: "exercice", "aria-labelledby": "titre-exercice" }, /* @__PURE__ */ React.createElement("h2", { id: "titre-exercice" }, "Exercice"), ex.intro && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: ex.intro })), ex.classer && cours.CLASSER && cours.PHASES && /* @__PURE__ */ React.createElement(Classer, { cours, lessonId }), ex.etapes.length > 0 && /* @__PURE__ */ React.createElement("ol", { className: "exercice-etapes" }, ex.etapes.map((e, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement("span", { className: "exercice-num", "aria-hidden": "true" }, i + 1), /* @__PURE__ */ React.createElement("div", { className: "exercice-contenu" }, /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.t })), e.p && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p, cfg: e.cfg }), e.a && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.a })), e.p2 && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p2, cfg: e.cfg2 }))))), ex.note && /* @__PURE__ */ React.createElement("p", { className: "note" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.note })), (ex.details || []).map((d, i) => /* @__PURE__ */ React.createElement(Depliable, { key: i, titre: d.titre }, d.t.map((x, j) => /* @__PURE__ */ React.createElement("p", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: x }))), d.p && /* @__PURE__ */ React.createElement(Prompt, { texte: d.p, cfg: d.cfg }))));
+  return /* @__PURE__ */ React.createElement("section", { className: "exercice", "aria-labelledby": "titre-exercice" }, /* @__PURE__ */ React.createElement("h2", { id: "titre-exercice" }, "Exercice"), ex.intro && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: ex.intro })), ex.classer && cours.CLASSER && cours.PHASES && /* @__PURE__ */ React.createElement(Classer, { cours, lessonId }), ex.etapes.length > 0 && /* @__PURE__ */ React.createElement("ol", { className: "exercice-etapes" }, ex.etapes.map((e, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement("span", { className: "exercice-num", "aria-hidden": "true" }, i + 1), /* @__PURE__ */ React.createElement("div", { className: "exercice-contenu" }, /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.t })), e.p && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p, cfg: e.cfg }), !e.p && e.cfg && /* @__PURE__ */ React.createElement(ConfigurationEtape, { cfg: e.cfg }), e.a && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.a })), e.p2 && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p2, cfg: e.cfg2 }))))), ex.note && /* @__PURE__ */ React.createElement("p", { className: "note" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.note })), (ex.details || []).map((d, i) => /* @__PURE__ */ React.createElement(Depliable, { key: i, titre: d.titre }, d.t.map((x, j) => /* @__PURE__ */ React.createElement("p", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: x }))), d.p && /* @__PURE__ */ React.createElement(Prompt, { texte: d.p, cfg: d.cfg }))));
 }
 function Lecon({ cours: c, id, etat, setEtat, toast }) {
   const l = c.LECONS[id - 1];

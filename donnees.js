@@ -210,11 +210,11 @@ export const LECONS = [
     exercice: {
       intro: "Tu vas faire construire une petite appli : un carnet pour noter des courses de livraison.",
       etapes: [
-        { t: "Nouvelle session sur `SPECIFICODE`. Dans le menu des modes, à côté de la zone de saisie, choisis **Plan**." },
+        { t: "Nouvelle session sur `SPECIFICODE`. Dans le menu des modes, à côté de la zone de saisie, choisis **Plan**.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
         { t: "Envoie :", p: "Je veux une petite appli web en un seul fichier index.html, en français, pour noter mes courses de livraison : pour chaque course, la distance en km et le montant gagné en euros. Affiche la liste des courses et les totaux : km, euros et euros par km. Pas de bibliothèque externe, design simple et lisible sur iPad. Propose-moi d’abord un plan.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
         { t: "Lis le plan et demande un changement, par exemple :", p: "Ajoute la date de chaque course.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
-        { t: "Valide le plan et laisse Claude coder. Passe en « Accepter automatiquement les modifications » si on te le demande." },
-        { t: "Ouvre le diff. Touche une ligne de texte à reformuler et laisse un commentaire, par exemple « écris plutôt Total gagné ». Envoie, puis vérifie que la correction est faite." },
+        { t: "Valide le plan et laisse Claude coder. Passe en « Accepter automatiquement les modifications » si on te le demande.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
+        { t: "Ouvre le diff. Touche une ligne de texte à reformuler et laisse un commentaire, par exemple « écris plutôt Total gagné ». Envoie, puis vérifie que la correction est faite.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
         { t: PR_FUSION },
         { t: "Mets l’appli en ligne : sur GitHub, dans ton dépôt, va dans Settings, puis Pages. Dans « Build and deployment », choisis « Deploy from a branch », la branche `main` et le dossier `/ (root)`, puis Save. Une ou deux minutes plus tard, l’adresse de ton appli s’affiche en haut de la page Pages. Ouvre-la sur ton iPad." },
       ],
@@ -297,7 +297,7 @@ export const LECONS = [
       etapes: [
         { t: "Retourne dans la session de la leçon 5 (barre latérale de claude.ai/code) et tape :", p: "/context", cfg: { session: "La session de la leçon 5", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" }, a: "Repère ce qui prend le plus de place." },
         { t: "Tape :", p: "/compact garde seulement les décisions sur l’enregistrement des courses et la commande de test", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
-        { t: "Retape `/context` et compare avec la première fois." },
+        { t: "Retape `/context` et compare avec la première fois.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
         { t: "Pour la leçon suivante, ouvre une nouvelle session depuis la barre latérale. Tu pourrais aussi taper `/clear` : la conversation repartirait de zéro, dans la même session." },
       ],
       details: [
@@ -338,7 +338,7 @@ export const LECONS = [
       etapes: [
         { t: "Nouvelle session :", p: "Tu relis un code que tu n’as pas écrit. Analyse index.html et calculs.js : signale uniquement les bugs qui changent un résultat (calculs, enregistrement, affichage), ignore le style. Pour chaque bug : fichier, ligne et explication.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
         { t: "Ensuite :", p: "Pour chaque bug confirmé, écris d’abord un test qui échoue, puis corrige, relance node --test et montre-moi la sortie complète.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Nouvelle, créée par Claude", autorisations: "Accept edits" } },
-        { t: "Ouvre le diff et commente au moins une ligne que tu ne comprends pas, avec : « explique-moi cette ligne simplement »." },
+        { t: "Ouvre le diff et commente au moins une ligne que tu ne comprends pas, avec : « explique-moi cette ligne simplement ».", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Celle de la session en cours", autorisations: "Accept edits" } },
         { t: PR_FUSION },
       ],
       details: [

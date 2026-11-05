@@ -123,7 +123,9 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 - Écris « touche », « ouvre », « choisis », jamais « clique ».
 - Tout texte à envoyer à Claude va dans un prompt (`p`, `p2`, ou `p` d’un `details`), avec son bouton Copier :
   l’apprenant ne tape à la main que des commandes courtes, comme `/context`. Chaque prompt a un `cfg`
-  (`cfg2` pour `p2`) : `{ session, depot, branche, autorisations }`, affiché au-dessus. Valeurs : « Plan », « Accept edits », « Manual » ou « Auto » ;
+  (`cfg2` pour `p2`) : `{ session, depot, branche, autorisations }`, dans la check-list « Avant d’envoyer »
+  de l’en-tête du prompt (`autorisations` s’y affiche « Mode »). Une étape sans prompt où l’on agit dans la
+  conversation (valider un plan, changer de mode, commenter le diff) a aussi un `cfg`. Valeurs : « Plan », « Accept edits », « Manual » ou « Auto » ;
   « Nouvelle, créée par Claude », « Celle de la session en cours » ou « Aucune » ; « Nouvelle session » ou « Même session que l’étape N ».
 - Une commande réservée au terminal ou à l’ordinateur est présentée comme une information, avec
   son équivalent sur le web (`/schedule` devient « une tâche planifiée créée sur claude.ai/code/routines »).

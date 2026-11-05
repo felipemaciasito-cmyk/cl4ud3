@@ -116,6 +116,22 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
           await p.locator(".prompt .copier").first().tap(); await attendre(p, 200);
           ok(`${n} : le bouton Copier copie le prompt`, (await p.evaluate(() => navigator.clipboard.readText())) === texte);
         }
+        const sansTexte = (ex.etapes || []).filter((e) => !e.p && e.cfg).length;
+        const nbCfg = await p.locator(".exercice .cfg-bouton").count();
+        ok(`${n} : une check-list « Avant d’envoyer » par prompt et par étape avec Claude`, nbCfg === prompts + sansTexte
+          && (await p.locator(".exercice .prompt-sans-texte").count()) === sansTexte, `${nbCfg} au lieu de ${prompts + sansTexte}`);
+        if (nbCfg) {
+          const b = p.locator(".exercice-etapes .cfg-bouton").first();
+          const panneau = p.locator("#" + (await b.getAttribute("aria-controls")).replace(/:/g, "\\:"));
+          const fermé = await panneau.isHidden();
+          await b.tap(); await attendre(p, 100);
+          const ouvert = await panneau.isVisible();
+          await panneau.locator(".cfg-case").first().tap();
+          const coche = (await panneau.locator(".cfg-case").first().getAttribute("aria-pressed")) === "true";
+          const petitsCfg = await petitesCibles(p);
+          ok(`${n} : « Avant d’envoyer » déroule la configuration et coche une ligne`, fermé && ouvert && coche
+            && (await b.textContent()).includes("1/5") && !petitsCfg.length, petitsCfg.slice(0, 3).join(", "));
+        }
         if (attendu.classer) {
           const items = p.locator(".classer ol > li");
           for (let k = 0; k < c.CLASSER.length; k++) await items.nth(k).locator("button", { hasText: c.PHASES[c.CLASSER[k].r] }).tap();
