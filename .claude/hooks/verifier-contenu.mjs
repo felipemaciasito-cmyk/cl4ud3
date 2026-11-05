@@ -58,6 +58,9 @@ async function verifier() {
         ...(l.exercice?.details || []).map((d) => [d.p, d.cfg])];
       prompts.forEach(([texte, cfg]) => texte && (CONF.every((k) => cfg?.[k]?.trim())
         || err.push(n + " : prompt sans configuration complète (session, depot, branche, autorisations)")));
+      // une étape où l’on agit avec Claude sans prompt peut avoir un cfg : il doit être complet aussi
+      (l.exercice?.etapes || []).forEach((e, k) => !e.p && e.cfg && !CONF.every((c) => e.cfg[c]?.trim())
+        && err.push(n + ", étape " + (k + 1) + " : configuration incomplète (session, depot, branche, autorisations)"));
       if (l.exercice?.classer && !(c.CLASSER && c.PHASES)) err.push(n + " : classer demande CLASSER et PHASES dans le fichier du cours");
       if (l.exercice?.classer) classer++;
       lire(l, n, false);

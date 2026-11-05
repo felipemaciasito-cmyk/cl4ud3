@@ -8,7 +8,7 @@
 import { React, createRoot } from "./vendor-react.js";
 import { COURS } from "./cours.js";
 
-const { useState, useEffect, useRef, useMemo, useCallback } = React;
+const { useState, useEffect, useRef, useMemo, useCallback, useId } = React;
 
 /* ---------------------------------------------------------------- cours */
 
@@ -159,6 +159,7 @@ const IcReglages = (p) => <Icone {...p}><path d="M20 7h-9" /><path d="M14 17H5" 
 const IcEnvoyer = (p) => <Icone {...p}><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></Icone>;
 const IcPlus = (p) => <Icone {...p}><path d="M5 12h14" /><path d="M12 5v14" /></Icone>;
 const IcBulle = (p) => <Icone {...p}><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></Icone>;
+const IcCoches = (p) => <Icone {...p}><path d="m3 7 2 2 4-4" /><path d="m3 17 2 2 4-4" /><path d="M13 7h8" /><path d="M13 17h8" /></Icone>;
 
 /* ---------------------------------------------------------------- petits composants */
 
@@ -211,20 +212,58 @@ function copierSecours(txt) {
 
 const ENVIRONNEMENT_PAR_DEFAUT = "Claude Code sur le web (claude.ai/code)";
 
-function ConfigurationPrompt({ cfg }) {
+// Check-list « Avant d’envoyer » : un bouton qui déroule la configuration de la conversation
+// (cfg d’un prompt, ou d’une étape où l’on agit avec Claude sans prompt). Les coches ne sont
+// pas enregistrées : elles servent seulement à vérifier, sur le moment.
+function useConfiguration(cfg) {
+  const id = useId();
+  const [ouvert, setOuvert] = useState(false);
+  const [coches, setCoches] = useState([]);
+  if (!cfg) return { bouton: null, panneau: null };
   const lignes = [
     ["Environnement", cfg.env || ENVIRONNEMENT_PAR_DEFAUT],
     ["Session", cfg.session],
     ["Dépôt", cfg.depot],
     ["Branche", cfg.branche],
-    ["Autorisations", cfg.autorisations],
+    ["Mode", cfg.autorisations],
   ];
-  return (
-    <dl className="prompt-cfg" aria-label="Configuration de la conversation">
+  const n = coches.length, total = lignes.length;
+  const basculer = (nom) => setCoches((c) => c.includes(nom) ? c.filter((x) => x !== nom) : [...c, nom]);
+  const bouton = (
+    <button type="button" className={"cfg-bouton" + (n === total ? " tout-ok" : "")}
+      aria-expanded={ouvert} aria-controls={id} onClick={() => setOuvert((o) => !o)}
+      aria-label={`Avant d’envoyer : configuration de la conversation, ${n} sur ${total} vérifiés`}>
+      {n === total ? <IcCheck taille={16} /> : <IcCoches taille={16} />}
+      <span>Avant d’envoyer</span>
+      <span className="cfg-compte">{n}/{total}</span>
+      <IcChevron taille={16} className="cfg-chevron" />
+    </button>
+  );
+  const panneau = (
+    <div className="cfg-panneau" id={id} hidden={!ouvert}>
+      <p>Vérifie ta conversation :</p>
       {lignes.map(([nom, valeur]) => (
-        <div key={nom}><dt>{nom}</dt><dd>{valeur}</dd></div>
+        <button key={nom} type="button" className="cfg-case" aria-pressed={coches.includes(nom)} onClick={() => basculer(nom)}>
+          <span className="cfg-coche" aria-hidden="true"><IcCheck taille={14} /></span>
+          <span><b>{nom}</b> : {valeur}</span>
+        </button>
       ))}
-    </dl>
+    </div>
+  );
+  return { bouton, panneau };
+}
+
+// Étape où l’on agit avec Claude sans prompt à copier : seulement la check-list.
+function ConfigurationEtape({ cfg }) {
+  const { bouton, panneau } = useConfiguration(cfg);
+  return (
+    <div className="prompt prompt-sans-texte">
+      <div className="prompt-tete">
+        <span>Dans la conversation</span>
+        <div className="prompt-actions">{bouton}</div>
+      </div>
+      {panneau}
+    </div>
   );
 }
 
@@ -239,21 +278,23 @@ function Prompt({ texte, cfg }) {
       minuteur.current = setTimeout(() => setEtat("repos"), 1800);
     });
   };
+  const { bouton, panneau } = useConfiguration(cfg);
   return (
-    <>
-      {cfg && <ConfigurationPrompt cfg={cfg} />}
-      <figure className="prompt">
-        <div className="prompt-tete">
-          <span>À envoyer à Claude</span>
+    <figure className="prompt">
+      <div className="prompt-tete">
+        <span>À envoyer à Claude</span>
+        <div className="prompt-actions">
+          {bouton}
           <button type="button" className={"copier" + (etat === "copie" ? " est-copie" : "")} onClick={copier}
             aria-label={etat === "copie" ? "Texte copié" : "Copier le texte"}>
             {etat === "copie" ? <IcCheck taille={16} /> : <IcCopie taille={16} />}
             <span>{etat === "copie" ? "Copié" : etat === "echec" ? "Sélectionne le texte" : "Copier"}</span>
           </button>
         </div>
-        <pre>{texte}</pre>
-      </figure>
-    </>
+      </div>
+      {panneau}
+      <pre>{texte}</pre>
+    </figure>
   );
 }
 
@@ -574,6 +615,7 @@ function Exercice({ ex, cours, lessonId }) {
               <div className="exercice-contenu">
                 <p><Texte t={e.t} /></p>
                 {e.p && <Prompt texte={e.p} cfg={e.cfg} />}
+                {!e.p && e.cfg && <ConfigurationEtape cfg={e.cfg} />}
                 {e.a && <p><Texte t={e.a} /></p>}
                 {e.p2 && <Prompt texte={e.p2} cfg={e.cfg2} />}
               </div>
