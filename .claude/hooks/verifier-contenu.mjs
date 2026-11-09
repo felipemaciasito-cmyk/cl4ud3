@@ -30,6 +30,7 @@ async function verifier() {
     : o && typeof o === "object" && Object.entries(o).forEach(([k, v]) =>
         k !== "texte" && lire(v, ou, brut || BRUT.includes(k)));
   const ids = new Set(), mots = new Map();
+  const motsListes = new Map(); // mot de l’encadré « Les mots de la leçon » → leçon qui le présente
   const CONF = ["session", "depot", "branche", "autorisations"]; // cfg de chaque prompt (cfg2 pour p2, cfg pour details)
 
   COURS.forEach((c, ci) => {
@@ -45,6 +46,8 @@ async function verifier() {
     lire({ titre: c.titre, SECTIONS: c.SECTIONS }, nc, true);
 
     const numeros = new Set(c.LECONS.map((l) => l.id));
+    // Les mots de l’encadré sont définis dans le lexique de ce cours ou d’un cours précédent.
+    const lexiqueConnu = new Set(COURS.slice(0, ci + 1).flatMap((x) => (x.LEXIQUE || []).map((m) => m[0])));
     let classer = 0;
     c.LECONS.forEach((l, i) => {
       const n = nc + ", leçon " + l.id;
@@ -53,6 +56,13 @@ async function verifier() {
       ["titre", "resume", "duree", "objectifs", "blocs", "retenir", "exercice"]
         .forEach((k) => l[k] || err.push(n + " : champ " + k + " manquant"));
       (l.blocs || []).forEach((b) => BLOCS.includes(b.type) || err.push(n + " : bloc inconnu " + b.type));
+      if (l.mots !== undefined && !(Array.isArray(l.mots) && l.mots.every((m) => typeof m === "string")))
+        err.push(n + " : mots doit être une liste de mots du lexique");
+      else (l.mots || []).forEach((m) => {
+        if (!lexiqueConnu.has(m)) err.push(n + " : le mot « " + m + " » de l’encadré n’est pas dans le lexique (ce cours ou un précédent)");
+        if (motsListes.has(m)) err.push(n + " : le mot « " + m + " » est déjà présenté dans " + motsListes.get(m));
+        else motsListes.set(m, n);
+      });
       if (!Array.isArray(l.exercice?.etapes)) err.push(n + " : exercice.etapes manquant");
       const prompts = [...(l.exercice?.etapes || []).flatMap((e) => [[e.p, e.cfg], [e.p2, e.cfg2]]),
         ...(l.exercice?.details || []).map((d) => [d.p, d.cfg])];

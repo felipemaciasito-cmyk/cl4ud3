@@ -102,10 +102,11 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
           prompts: document.querySelectorAll(".exercice figure.prompt").length, etapes: document.querySelectorAll(".exercice-etapes > li").length,
           depl: document.querySelectorAll(".exercice details.depliable").length, classer: !!document.querySelector(".classer"),
           suivant: [...document.querySelectorAll(".lecon-pied a")].pop()?.getAttribute("href"),
+          mots: document.querySelectorAll(".mots dt").length,
         }));
         const attendu = { h1: l.titre, obj: l.objectifs.length, ret: l.retenir.length, h2: compte("h2"), h3: compte("h3"), ul: compte("liste"),
           tab: compte("tableau"), code: compte("code"), prompts, etapes: (ex.etapes || []).length, depl: (ex.details || []).length,
-          classer: !!(ex.classer && c.CLASSER && c.PHASES),
+          classer: !!(ex.classer && c.CLASSER && c.PHASES), mots: (l.mots || []).length,
           suivant: l.id < c.LECONS.length ? lien(c, "lecon-" + (l.id + 1)) : c.QUIZ.length ? lien(c, "quiz") : undefined };
         const ecarts = Object.keys(attendu).filter((k) => attendu[k] !== undefined && vu[k] !== attendu[k]).map((k) => `${k} : ${vu[k]} au lieu de ${attendu[k]}`);
         ok(`${n} « ${l.titre} » : tout le contenu s’affiche`, !ecarts.length, ecarts.join(" ; "));

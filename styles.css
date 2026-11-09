@@ -320,6 +320,19 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
 }
 .code pre code { background: none; padding: 0; font-size: inherit; }
 
+/* encadré « Les mots de la leçon » */
+.mots { margin-bottom: 2rem; border-left: 6px solid var(--lien); }
+.objectifs + .mots { margin-top: -1rem; }
+.mots h2 { margin-bottom: .6rem; }
+.mots dl { margin: 0; }
+.mots-entree + .mots-entree { margin-top: .7rem; }
+.mots dt { font-family: var(--titre); font-weight: 700; }
+.mots dd { margin: .1rem 0 0; max-width: 64ch; }
+.mots-lien {
+  display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; margin-top: .4rem;
+  color: var(--lien); font-weight: 700; text-decoration: none;
+}
+
 .retenir {
   margin: 2.6rem 0; padding: 1.15rem 1.3rem; background: var(--succes-doux);
   border-radius: var(--r-moyen); border-left: 6px solid var(--succes);
