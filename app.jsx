@@ -212,6 +212,10 @@ function copierSecours(txt) {
 
 const ENVIRONNEMENT_PAR_DEFAUT = "Claude Code sur le web (claude.ai/code)";
 
+// Les données gardent le nom officiel des modes (documentation : Accept edits, Manual).
+// La check-list affiche le libellé de l’appli Claude en français.
+const MODES_AFFICHES = { "Accept edits": "Accepter automatiquement les modifications", "Manual": "Manuel" };
+
 // Check-list « Avant d’envoyer » : un bouton qui déroule la configuration de la conversation
 // (cfg d’un prompt, ou d’une étape où l’on agit avec Claude sans prompt). Les coches ne sont
 // pas enregistrées : elles servent seulement à vérifier, sur le moment.
@@ -225,7 +229,7 @@ function useConfiguration(cfg) {
     ["Session", cfg.session],
     ["Dépôt", cfg.depot],
     ["Branche", cfg.branche],
-    ["Mode", cfg.autorisations],
+    ["Mode", MODES_AFFICHES[cfg.autorisations] || cfg.autorisations],
   ];
   const n = coches.length, total = lignes.length;
   const basculer = (nom) => setCoches((c) => c.includes(nom) ? c.filter((x) => x !== nom) : [...c, nom]);
@@ -338,6 +342,24 @@ function Bloc({ b }) {
     );
     default: return <p><Texte t={b.t} /></p>;
   }
+}
+
+// Encadré « Les mots de la leçon » : les mots nouveaux de la leçon (champ mots).
+// Les définitions viennent du lexique, pour que les deux disent toujours la même chose.
+function MotsLecon({ mots }) {
+  const entrees = (mots || []).map((m) => LEXIQUE.find(([x]) => x === m)).filter(Boolean);
+  if (!entrees.length) return null;
+  return (
+    <section className="carte mots">
+      <h2>Les mots de la leçon</h2>
+      <dl>
+        {entrees.map(([m, d]) => (
+          <div key={m} className="mots-entree"><dt>{m}</dt><dd>{fr(d)}</dd></div>
+        ))}
+      </dl>
+      <a className="mots-lien" href="#lexique"><IcLivre taille={18} /><span>Tout le lexique</span></a>
+    </section>
+  );
 }
 
 function Jauge({ valeur, total, etiquette }) {
@@ -663,6 +685,7 @@ function Lecon({ cours: c, id, etat, setEtat, toast }) {
         <h2>Dans cette leçon</h2>
         <ul>{l.objectifs.map((o, i) => <li key={i}><Texte t={o} /></li>)}</ul>
       </section>
+      <MotsLecon mots={l.mots} />
 
       <div className="contenu">{l.blocs.map((b, i) => <Bloc key={i} b={b} />)}</div>
 

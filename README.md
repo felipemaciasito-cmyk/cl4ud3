@@ -1,6 +1,6 @@
 # CL4UD3
 
-CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Cours : **Claude Code 101**, puis **Claude Code en action**. Chaque cours a ses leçons, ses exercices sur claude.ai/code et son quiz final d’une question à la fois ; le lexique est commun. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
+CL4UD3 est une application pour suivre en français des cours officiels sur Claude Code, pensée pour l’iPad. Cours : **Claude Code 101**, puis **Claude Code en action**. Chaque cours a ses leçons, ses exercices sur claude.ai/code et son quiz final d’une question à la fois. Chaque leçon commence par un encadré « Les mots de la leçon », qui explique simplement ses mots techniques nouveaux ; tous se retrouvent dans le lexique commun. Elle s’installe sur l’écran d’accueil et fonctionne hors ligne après une première visite.
 
 **Robotto, le petit robot** : dans une leçon ou le lexique, sélectionne un passage, puis touche Robotto quand il apparaît. Il répond à tes questions sur ce passage, en suivant tes consignes (« Ma façon de répondre »). Les conversations de chaque page se retrouvent avec le bouton « Conversations », se trient et se suppriment ; elles restent sur l’appareil. Pour qu’il réponde, il faut connecter une IA une fois, dans le carnet de révision (panneau « Assistant intelligent ») : l’adresse HTTPS d’un service à toi, qui garde la clé secrète. Aucune clé n’est jamais placée dans l’appli.
 

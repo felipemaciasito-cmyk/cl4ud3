@@ -20,8 +20,7 @@ contenu), pose la question avant d’écrire. Garde ce fichier sous 200 lignes (
   session, après chaque modification de `cours.js`, d’un fichier `donnees*.js` ou de `sw.js`, et
   avant la fin d’une réponse si le contenu a changé ; `node tests/tout.mjs` avant chaque `git push`
   ou création de PR, envoi bloqué s’il échoue. GitHub relance les mêmes tests sur chaque PR
-  (`.github/workflows/tests.yml`). Corrige ce qu’ils signalent, ne les contourne jamais ; si un
-  test ne peut pas tourner, dis-le à l’utilisateur.
+  (`.github/workflows/tests.yml`). Corrige ce qu’ils signalent, ne les contourne jamais ; si un test ne peut pas tourner, dis-le.
 - Régénérer `app.js` après une modification de `app.jsx` (ne modifie jamais `app.js` à la main) :
 
 ```bash
@@ -30,8 +29,7 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 
 ## 1. Rester dans la continuité du parcours
 
-- Avant d’écrire, relis les leçons existantes du cours, au moins les deux dernières, et le tableau
-  du labo (partie 6).
+- Avant d’écrire, relis les leçons existantes du cours (au moins les deux dernières) et le tableau du labo (partie 6).
 - Ajoute toujours à la fin du cours : nouvel `id` = dernier `id` + 1 (chaque cours commence à 1).
   Ne renumérote, ne déplace et ne supprime jamais une leçon, ne change jamais l’`id` d’un cours ni
   une clé du localStorage : la progression (`cc101fr:v1`), le carnet de révision
@@ -71,7 +69,6 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   4. Cite le cours dans `README.md`. Sa première leçon cite le cours précédent (où on en est).
 - L’appli s’adapte seule : un en-tête et un quiz par cours, adresses `#<id>/lecon-1`, lexique commun,
   cours proposé dans le carnet de révision. Rien à changer dans `app.jsx` ni `revisions-app.js`.
-- Un mot du lexique n’est défini qu’une fois, dans le premier cours qui l’utilise.
 
 ## 3. La forme d’une leçon
 
@@ -81,6 +78,7 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   titre: "Titre court",               // sans point final
   resume: "Une phrase courte.",       // affichée dans la liste du parcours
   objectifs: ["Comprendre…", "Savoir…", "Créer…"],  // 3, sans point final
+  mots: ["Commit", "Test"],           // facultatif : mots nouveaux, tels que dans LEXIQUE
   blocs: [                            // types : p, h2, h3, liste, tableau, code
     { type: "p", t: "…" }, { type: "h2", t: "…" },
     { type: "liste", items: ["…", "…"] },
@@ -102,24 +100,23 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 ```
 
 - `duree` : réaliste sur iPad (les leçons actuelles vont de 8 à 30 minutes).
-- Au moins un titre `h2` par leçon. Les titres `h2` et `h3`, comme les objectifs, deviennent les notions proposées dans le carnet de
-  révision : chacun doit se comprendre seul.
+- Au moins un `h2` par leçon. Les `h2`, les `h3` et les objectifs deviennent des notions du carnet de révision : chacun se comprend seul.
 - Mise en forme : `**gras**` pour un terme nouveau à sa première apparition, `` `code` `` pour un
   fichier, une commande, un champ, `*italique*` rarement. Pas d’autre Markdown, pas de HTML, pas
   d’astérisque isolé. Elle ne marche pas dans `titre`, `resume`, les prompts, le quiz et le lexique.
 - Un bloc `code` qui contient des antislashs s’écrit avec `String.raw` (voir `PRETTIER_HOOK`).
-- `classer: true` (exercice où l’on classe des étapes) demande `CLASSER` et `PHASES` dans le fichier
-  du cours, une fois par cours. Un autre type de bloc ou d’exercice demande de modifier `app.jsx`,
-  de régénérer `app.js` et de le signaler.
+- `classer: true` (exercice où l’on classe des étapes) demande `CLASSER` et `PHASES` dans le fichier du cours, une fois
+  par cours. Un autre type de bloc ou d’exercice demande de modifier `app.jsx`, de régénérer `app.js` et de le signaler.
 - Quiz : 1 à 3 questions par nouvelle leçon, à la fin du `QUIZ` du cours, avec `l` = numéro de la
   leçon. 4 réponses plausibles, une seule juste ; varie sa position (`b`, de 0 à 3). `e` explique pourquoi.
-- Lexique : chaque terme nouveau qui resservira entre dans `LEXIQUE`, par ordre alphabétique, en une ou deux phrases.
+- Lexique : chaque terme nouveau qui resservira entre dans `LEXIQUE` (ordre alphabétique, une ou deux phrases
+  simples, sans mise en forme), dans le premier cours qui l’utilise. Ajoute-le aussi à `mots` dans la leçon qui le
+  présente : l’encadré « Les mots de la leçon » en reprend la définition. Un mot n’est listé qu’une fois dans le parcours.
 
 ## 4. Pensé pour l’iPad
 
-- Tout l’exercice se fait sur iPad : Safari, claude.ai/code ou l’onglet Code de l’appli Claude,
-  github.com, l’app Fichiers. Jamais de terminal, d’installation, de raccourci clavier, de clic
-  droit ni de survol.
+- Tout l’exercice se fait sur iPad : Safari, claude.ai/code ou l’onglet Code de l’appli Claude, github.com,
+  l’app Fichiers. Jamais de terminal, d’installation, de raccourci clavier, de clic droit ni de survol.
 - Écris « touche », « ouvre », « choisis », jamais « clique ».
 - Tout texte à envoyer à Claude va dans un prompt (`p`, `p2`, ou `p` d’un `details`), avec son bouton Copier :
   l’apprenant ne tape à la main que des commandes courtes, comme `/context`. Chaque prompt a un `cfg`
@@ -127,6 +124,8 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   de l’en-tête du prompt (`autorisations` s’y affiche « Mode »). Une étape sans prompt où l’on agit dans la
   conversation (valider un plan, changer de mode, commenter le diff) a aussi un `cfg`. Valeurs : « Plan », « Accept edits », « Manual » ou « Auto » ;
   « Nouvelle, créée par Claude », « Celle de la session en cours » ou « Aucune » ; « Nouvelle session » ou « Même session que l’étape N ».
+- Modes : dans le texte, écris le libellé de l’appli Claude en français, « Accepter automatiquement les modifications »,
+  et cite une fois le nom officiel (Accept edits). Le `cfg` garde « Accept edits » ; la check-list l’affiche en français.
 - Une commande réservée au terminal ou à l’ordinateur est présentée comme une information, avec
   son équivalent sur le web (`/schedule` devient « une tâche planifiée créée sur claude.ai/code/routines »).
 - Libellés de boutons entre « », tels qu’ils s’affichent, même en anglais (« Merge pull request »),
@@ -142,6 +141,8 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
 - Tutoiement, phrases courtes, voix active, une idée par phrase. Explique avant de nommer.
 - Garde le mot anglais seulement quand c’est le vrai nom de l’outil (hook, skill, commit, diff,
   PR) et explique-le en français à sa première apparition. Sinon, le mot français (dépôt, branche).
+- Chaque mot technique (outil, commande, notion) est expliqué en une phrase simple, avec un exemple si possible, à sa
+  première apparition : un mot, une définition. S’il ne sert qu’une fois et pas sur iPad, remplace-le par des mots simples.
 - Source en anglais : réécris en français naturel, sans traduire mot à mot.
 - Typographie : apostrophe courbe ’, guillemets « », points de suspension …, nombres à la
   française (12,50 €). Mets une espace normale avant `: ; ? !` et à l’intérieur des guillemets :
@@ -174,8 +175,7 @@ livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un n
 | En action · 8 | Hook `PostToolUse` qui lance `node --check` sur chaque `.js` modifié ; export CSV |
 | En action · 9 | Dossier `plugin-labo/` avec son manifeste : relecteur, `journal`, `verifier`, hooks, MCP |
 
-- Pars de l’état laissé par la leçon précédente, même si elle est dans le cours d’avant : ne recrée
-  pas ce qui existe, ne casse aucune règle posée.
+- Pars de l’état laissé par la leçon précédente, même dans le cours d’avant : ne recrée pas ce qui existe, ne casse aucune règle.
 - Le labo de chaque apprenant peut différer un peu : les prompts demandent à Claude de lire le
   code d’abord, au lieu de supposer un nom de fonction ou de fichier.
 - Réutilise ce qui existe quand ça a du sens : `node --test`, le relecteur, `/journal`, `claude-code-docs`.
@@ -192,8 +192,8 @@ livraison, d’un cours à l’autre, sauf si une leçon annonce clairement un n
    fichier est ajouté à `FICHIERS`.
 3. `README.md` est à jour : il cite chaque cours, et la liste des fichiers est complète.
 4. Le tableau du labo (partie 6) est à jour.
-5. Relis comme l’apprenant : chaque étape se fait sur iPad, chaque prompt se copie, rien ne
-   contredit une leçon précédente.
+5. Relis comme l’apprenant : chaque étape se fait sur iPad, chaque prompt se copie, chaque mot technique est expliqué,
+   rien ne contredit une leçon précédente.
 6. Message de commit en français, à l’infinitif : « Ajouter la leçon 13 : … ».
 7. Dans le résumé de la PR, liste ce qui n’a pas pu être vérifié, et rappelle de tester la leçon
    sur iPad, en portrait et en paysage, en mode clair et sombre.
