@@ -23,7 +23,7 @@ const attendre = (p, ms) => p.waitForTimeout(ms);
 async function aller(p, url) {
   await p.goto(url);
   const sel = /revisions\.html/.test(url) ? "#course-select option" : /lecon-\d+$/.test(url) ? ".lecon h1"
-    : /quiz$/.test(url) ? ".quiz h1" : /#lexique$/.test(url) ? ".lexique h1" : ".hero h1";
+    : /quiz$/.test(url) ? ".quiz h1" : /#lexique(\/|$)/.test(url) ? ".lexique h1" : ".hero h1";
   await p.waitForSelector(sel, { timeout: 15000 }).catch(() => {});
 }
 
@@ -185,6 +185,11 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
       ok("Ordre alphabétique", vus.every((m, k) => !k || vus[k - 1].localeCompare(m, "fr") < 0));
       await p.locator("input[type=search]").fill(mots[0].slice(0, 4)); await attendre(p, 150);
       ok("La recherche filtre", (await p.locator("dt").count()) >= 1 && (await p.locator("dt").count()) <= mots.length);
+      await aller(p, BASE + "#lexique/depot-repo"); await attendre(p, 300);
+      const direct = await p.evaluate(() => ({ mot: document.querySelector(".lexique-cible dt")?.textContent, filtre: document.querySelector("input[type=search]").value,
+        retour: document.querySelector(".lecon-haut .retour")?.textContent }));
+      ok("Adresse d’un mot (#lexique/depot-repo) : le mot est montré, la recherche vidée", direct.mot === "Dépôt (repo)" && direct.filtre === "", JSON.stringify(direct));
+      ok("Sans leçon d’origine, le haut de page mène au parcours", direct.retour === "Parcours");
       await ctx.close();
     }
 
@@ -277,6 +282,38 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
       ok("Le passage sélectionné n’est pas recopié dans la fenêtre", !((await fen.textContent()) || "").includes(passage.slice(0, 40)));
       ok("Sans service IA : il explique comment en connecter une", (await p.locator(".robot-connexion a[href='revisions.html']").count()) === 1 && (await p.locator(".robot-saisie").count()) === 0);
       await p.locator(".robot-fenetre button[aria-label=Fermer]").tap(); await attendre(p, 200);
+
+      // Robotto repère les mots du lexique dans le passage et mène à leur définition.
+      const yAvant = await p.evaluate(() => {
+        const el = document.createElement("p");
+        el.textContent = "Claude pousse ses branches, puis tu fusionnes à la main sur GitHub Pages.";
+        document.querySelector(".contenu").appendChild(el);
+        el.scrollIntoView({ block: "center" });
+        const r = document.createRange(); r.selectNodeContents(el);
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+        return Math.round(scrollY);
+      });
+      await p.waitForSelector(".robot-bouton", { timeout: 3000 }).catch(() => {});
+      await p.locator(".robot-bouton").tap(); await attendre(p, 400);
+      const reperes = await p.locator(".robot-mot").allTextContents();
+      ok("Robotto repère les mots du lexique (pluriel, verbe, mot le plus long, pas « à la main »)",
+        JSON.stringify(reperes) === JSON.stringify(["Pousser (push)", "Branche", "Fusionner", "GitHub Pages"]), reperes.join(", "));
+      const petitsMots = await petitesCibles(p);
+      ok("Mots repérés : zones à toucher d’au moins 44 px", !petitsMots.length, petitsMots.slice(0, 3).join(", "));
+      await p.locator(".robot-mot", { hasText: "Branche" }).tap(); await attendre(p, 700);
+      const arrivee = await p.evaluate(() => {
+        const el = document.querySelector(".lexique-cible"), b = el && el.getBoundingClientRect();
+        return { hash: location.hash, mot: el && el.querySelector("dt").textContent, surligne: !!document.querySelector(".lexique-cible.est-surligne"),
+          visible: !!b && b.top >= 0 && b.bottom <= innerHeight, robot: !!document.querySelector(".robot-fenetre") };
+      });
+      ok("Toucher un mot ouvre sa définition dans le lexique, surlignée et en vue",
+        arrivee.hash === "#lexique/branche" && arrivee.mot === "Branche" && arrivee.surligne && arrivee.visible && !arrivee.robot, JSON.stringify(arrivee));
+      ok("Le lexique propose « Retour à la leçon 1 »", /Retour à la leçon 1/.test((await p.locator(".lexique-cible .lexique-retour").textContent().catch(() => "")) || "")
+        && /Retour à la leçon 1/.test((await p.locator(".lecon-haut .retour").textContent().catch(() => "")) || ""));
+      await p.locator(".lexique-cible .lexique-retour").tap(); await attendre(p, 700);
+      const revenu = await p.evaluate(() => ({ hash: location.hash, y: Math.round(scrollY) }));
+      ok("Le retour ramène à la leçon, au même endroit", revenu.hash === lien(c, "lecon-1") && Math.abs(revenu.y - yAvant) < 60, JSON.stringify({ ...revenu, yAvant }));
+      await aller(p, BASE + lien(c, "lecon-1"));
 
       // Un service IA factice, sur le même site, qui répond comme le vrai.
       const envois = [];

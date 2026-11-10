@@ -31,6 +31,7 @@ async function verifier() {
         k !== "texte" && lire(v, ou, brut || BRUT.includes(k)));
   const ids = new Set(), mots = new Map();
   const motsListes = new Map(); // mot de l’encadré « Les mots de la leçon » → leçon qui le présente
+  const ancres = new Map();     // adresse d’un mot dans le lexique (#lexique/<ancre>) → mot
   const CONF = ["session", "depot", "branche", "autorisations"]; // cfg de chaque prompt (cfg2 pour p2, cfg pour details)
 
   COURS.forEach((c, ci) => {
@@ -89,6 +90,13 @@ async function verifier() {
     (c.LEXIQUE || []).forEach((m, i, L) => {
       if (i && L[i - 1][0].localeCompare(m[0], "fr") >= 0) err.push(nc + ", lexique : " + m[0] + " mal classé");
       if (mots.has(m[0])) err.push(nc + ", lexique : " + m[0] + " est déjà défini dans " + mots.get(m[0]));
+      // 3e élément facultatif : les autres formes que Robotto repère dans une sélection.
+      if (m.length > 3 || (m.length === 3 && !(Array.isArray(m[2]) && m[2].length && m[2].every((x) => typeof x === "string" && x.trim()))))
+        err.push(nc + ", lexique : " + m[0] + " : le 3e élément doit être une liste d’autres formes du mot");
+      // Adresse #lexique/<ancre> : elle doit désigner un seul mot.
+      const a = m[0].normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      if (ancres.has(a)) err.push(nc + ", lexique : " + m[0] + " a la même adresse (#lexique/" + a + ") que " + ancres.get(a));
+      ancres.set(a, m[0]);
       mots.set(m[0], nc);
       lire(m, nc + ", lexique", true);
     });

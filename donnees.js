@@ -648,8 +648,9 @@ export const QUIZ = [
 ];
 
 // Chaque mot est défini une seule fois, dans le premier cours qui l’utilise. Texte simple, sans mise en forme.
+// 3e élément facultatif : d’autres formes du mot, que Robotto repère dans une sélection (pluriels et mots en -er : repérés seuls).
 export const LEXIQUE = [
-  ["Accepter automatiquement les modifications", "Le mode où Claude modifie les fichiers sans te demander. C’est le libellé de l’appli Claude en français ; la documentation officielle l’appelle Accept edits."],
+  ["Accepter automatiquement les modifications", "Le mode où Claude modifie les fichiers sans te demander. C’est le libellé de l’appli Claude en français ; la documentation officielle l’appelle Accept edits.", ["Accept edits"]],
   ["Agent", "Une IA qui agit sur ton projet avec des outils (lire, modifier, exécuter), au lieu de seulement répondre."],
   ["Bibliothèque", "Du code tout prêt, écrit par d’autres, qu’on ajoute à un projet pour ne pas tout réécrire. Ton labo n’en utilise pas."],
   ["Boucle agentive", "Le cycle de travail de Claude Code : rassembler le contexte, agir, vérifier, et recommencer jusqu’à ce que la tâche soit faite."],
@@ -667,7 +668,7 @@ export const LEXIQUE = [
   ["Dépôt (repo)", "Le dossier d’un projet, rangé sur GitHub avec l’historique de tous ses changements."],
   ["Diff", "La liste des changements, ligne par ligne : ce qui a été ajouté et ce qui a été retiré."],
   ["Environnement", "L’ordinateur d’Anthropic, dans le cloud, où tournent tes sessions web, avec ses réglages, comme l’accès à internet."],
-  ["Fusionner", "Faire entrer les changements d’une branche dans la branche principale, main. Sur GitHub, c’est le bouton « Merge pull request » d’une PR."],
+  ["Fusionner", "Faire entrer les changements d’une branche dans la branche principale, main. Sur GitHub, c’est le bouton « Merge pull request » d’une PR.", ["fusion"]],
   ["Git", "L’outil qui garde l’historique de tous les changements d’un projet. GitHub héberge des projets suivis par git."],
   ["GitHub", "Le site qui héberge tes dépôts, gratuit. Claude Code sur le web y copie ton projet et y renvoie ses changements."],
   ["GitHub Pages", "Le service gratuit de GitHub qui publie un dépôt public à une adresse web. Ton appli du labo y est en ligne."],
@@ -681,9 +682,9 @@ export const LEXIQUE = [
   ["Mode de permission", "Le réglage qui fixe ce que Claude peut faire sans te demander : Plan, Accepter automatiquement les modifications, Auto. Tu peux en changer à tout moment."],
   ["Mode Plan", "Mode où Claude lit le code et propose une façon de faire, sans modifier les fichiers."],
   ["Modèle", "Le programme d’intelligence artificielle qui réfléchit et écrit, comme Claude Opus ou Claude Sonnet. Claude Code lui donne des outils pour agir."],
-  ["Node.js", "Un programme qui fait fonctionner du code JavaScript en dehors du navigateur. Sa commande node --test lance tous les tests d’un projet."],
+  ["Node.js", "Un programme qui fait fonctionner du code JavaScript en dehors du navigateur. Sa commande node --test lance tous les tests d’un projet.", ["node"]],
   ["Pousser (push)", "Envoyer sur GitHub les changements faits sur une branche. Claude pousse sa branche quand il a fini ; tu peux alors la relire."],
-  ["PR (pull request)", "Une demande de fusion : on propose de faire entrer les changements d’une branche dans la branche principale, après les avoir relus."],
+  ["PR (pull request)", "Une demande de fusion : on propose de faire entrer les changements d’une branche dans la branche principale, après les avoir relus.", ["demande de fusion"]],
   ["Prompt", "Le message que tu envoies à Claude pour lui demander quelque chose. Dans cette appli, chaque prompt a un bouton Copier."],
   ["Quota", "La quantité d’utilisation incluse dans ton abonnement Claude. Plus la conversation est longue, plus chaque message en consomme."],
   ["README", "Le fichier de présentation d’un dépôt, souvent README.md. GitHub l’affiche sous la liste des fichiers."],
