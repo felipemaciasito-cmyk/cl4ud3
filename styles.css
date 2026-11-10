@@ -524,6 +524,16 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
 .lexique-entree { padding: .9rem 0; border-bottom: 1px solid var(--bord); }
 .lexique dt { font-family: var(--titre); font-weight: 700; font-size: 1.12rem; }
 .lexique dd { margin: .2rem 0 0; max-width: 64ch; }
+/* mot ouvert depuis Robotto : surligné un instant, avec le retour à la leçon */
+.lexique-entree { transition: background-color .8s ease-out, box-shadow .8s ease-out; }
+.lexique-entree:focus { outline: none; }
+.lexique-cible { border-radius: var(--r-petit); }
+.lexique-cible.est-surligne { background: var(--ambre-doux); box-shadow: 0 0 0 .6rem var(--ambre-doux); }
+.lexique-retour {
+  display: inline-flex; align-items: center; gap: .35rem; min-height: 44px; margin-top: .3rem;
+  color: var(--lien); font-weight: 700; text-decoration: none;
+}
+@media (prefers-reduced-motion: reduce) { .lexique-entree { transition: none; } }
 .vide { margin-top: 1.5rem; color: var(--discret); }
 
 /* ------------------------------------------------ toast */
@@ -722,6 +732,12 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
   border: 1px solid var(--verre-bord); background: var(--verre-doux); color: var(--verre-encre); font-size: .9rem; font-weight: 700;
 }
 .robot-rapide:disabled { opacity: .5; cursor: not-allowed; }
+/* mots du lexique repérés dans le passage : chacun mène à sa définition */
+.robot-mots-liste { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.robot-mot {
+  display: inline-flex; align-items: center; gap: .3rem; text-decoration: none;
+  background: var(--verre-plein); border-color: var(--ambre-bord);
+}
 .robot-ligne { display: flex; gap: .5rem; align-items: flex-end; }
 .robot-saisie .robot-ligne {
   gap: .25rem; padding: .25rem; border-radius: 26px; background: var(--verre-doux); border: 1px solid var(--verre-bord);

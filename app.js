@@ -9,6 +9,56 @@ const LEXIQUE = (() => {
   const vus = /* @__PURE__ */ new Set();
   return COURS.flatMap((c) => c.LEXIQUE || []).filter(([m]) => !vus.has(m) && vus.add(m)).sort((a, b) => a[0].localeCompare(b[0], "fr"));
 })();
+const sansAccents = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "");
+const ancre = (mot) => sansAccents(mot).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const EXPRESSIONS_COURANTES = ["la main", "les mains"];
+const echapper = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function formesDu([mot, , autres]) {
+  const m = /^(.*?)\s*\((.*)\)$/.exec(mot);
+  const base = m ? m[1] : mot;
+  const formes = [base];
+  if (m) formes.push(/\sde$/.test(m[2]) ? m[2] + " " + base.toLowerCase() : m[2]);
+  return [...formes, ...Array.isArray(autres) ? autres : []];
+}
+function motifDe(forme) {
+  const f = sansAccents(forme).trim();
+  const sigle = f === f.toUpperCase() && /[A-Z]{2}/.test(f);
+  const mots = (sigle ? f : f.toLowerCase()).split(/\s+/);
+  const corps = mots.map((w) => {
+    if (sigle) return echapper(w) + "s?";
+    if (mots.length === 1 && /^[a-z]{3,}er$/.test(w)) return echapper(w.slice(0, -2)) + "(?:ers|er|ees|ee|es|e|ent|ez|ons|ant|ait|aient)";
+    return echapper(w) + "(?:s|x)?";
+  }).join("\\s+");
+  const lettre = sigle ? "A-Za-z0-9" : "a-z0-9";
+  return { sigle, re: new RegExp("(?:^|[^" + lettre + "])(" + corps + ")(?![" + lettre + "])", "g") };
+}
+const REPERES = LEXIQUE.map((e) => ({ e, motifs: formesDu(e).filter((x) => x && x.trim()).map(motifDe) }));
+function reperer(texte, max = 12) {
+  if (!texte) return [];
+  const t = sansAccents(texte);
+  let bas = t.toLowerCase();
+  for (const x of EXPRESSIONS_COURANTES) {
+    bas = bas.replace(new RegExp("(^|[^a-z0-9])" + echapper(x) + "(?![a-z0-9])", "g"), (m, a) => a + " ".repeat(m.length - a.length));
+  }
+  const trouves = [];
+  for (const { e, motifs } of REPERES) {
+    for (const { sigle, re } of motifs) {
+      const source = sigle ? t : bas;
+      re.lastIndex = 0;
+      for (let m = re.exec(source); m; m = re.exec(source)) {
+        const fin = m.index + m[0].length;
+        trouves.push({ e, debut: fin - m[1].length, fin });
+      }
+    }
+  }
+  trouves.sort((a, b) => b.fin - b.debut - (a.fin - a.debut) || a.debut - b.debut);
+  const gardes = [];
+  for (const x of trouves) if (!gardes.some((g) => x.debut < g.fin && g.debut < x.fin)) gardes.push(x);
+  const vus = /* @__PURE__ */ new Set();
+  return gardes.sort((a, b) => a.debut - b.debut).map((x) => x.e).filter((e) => !vus.has(e[0]) && vus.add(e[0])).slice(0, max);
+}
+let retourLexique = null;
+let defilementAVenir = null;
 function lien(c, page) {
   return "#" + (c.id === PREMIER.id ? "" : c.id + "/") + page;
 }
@@ -92,7 +142,8 @@ function useEtat() {
 }
 function lireRoute() {
   const h = location.hash.replace(/^#/, "");
-  if (h === "lexique") return { vue: "lexique" };
+  const lx = /^lexique(?:\/([a-z0-9-]+))?$/.exec(h);
+  if (lx) return { vue: "lexique", mot: lx[1] || null };
   const m = /^(?:([a-z0-9-]+)\/)?(quiz|lecon-(\d{1,3}))$/.exec(h);
   const c = m && (m[1] ? COURS.find((x) => x.id === m[1]) : PREMIER);
   if (c && m[2] === "quiz" && c.QUIZ.length) return { vue: "quiz", cours: c };
@@ -500,14 +551,37 @@ function Quiz({ cours, etat, setEtat }) {
     );
   })), estValide && /* @__PURE__ */ React.createElement("div", { className: "explication " + (choisi === q.b ? "est-juste" : "est-faux"), role: "status" }, /* @__PURE__ */ React.createElement("strong", null, choisi === q.b ? "Bonne réponse." : "Pas tout à fait."), " ", fr(q.e)), /* @__PURE__ */ React.createElement("div", { className: "quiz-actions" }, idx > 0 && /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-contour", onClick: () => setIdx(idx - 1) }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Précédente"), /* @__PURE__ */ React.createElement("span", { className: "espace" }), !estValide ? /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-principal", disabled: choisi === null, onClick: valider }, "Valider") : /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-principal", onClick: suivant }, idx < QUIZ.length - 1 ? "Question suivante" : "Voir mon résultat", /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })))), /* @__PURE__ */ React.createElement("p", { className: "astuce" }, "Au clavier : touches 1 à 4 pour choisir, Entrée pour valider."));
 }
-function Lexique() {
+function Lexique({ mot }) {
   const [filtre, setFiltre] = useState("");
-  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const [retour] = useState(() => retourLexique);
+  const [surligne, setSurligne] = useState(false);
+  const norm = (s) => sansAccents(s).toLowerCase();
   const liste = useMemo(() => {
     const f = norm(filtre.trim());
     return f ? LEXIQUE.filter(([m, d]) => norm(m).includes(f) || norm(d).includes(f)) : LEXIQUE;
   }, [filtre]);
-  return /* @__PURE__ */ React.createElement("article", { className: "page lexique" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement(BoutonConversations, { page: "lexique" })), /* @__PURE__ */ React.createElement("h1", null, "Lexique"), /* @__PURE__ */ React.createElement("p", { className: "chapo" }, "Les mots du parcours, expliqués simplement."), /* @__PURE__ */ React.createElement("label", { className: "recherche" }, /* @__PURE__ */ React.createElement(IcLoupe, { taille: 18 }), /* @__PURE__ */ React.createElement(
+  useEffect(() => () => {
+    retourLexique = null;
+  }, []);
+  useEffect(() => {
+    if (!mot) return;
+    setFiltre("");
+    setSurligne(true);
+    const m = setTimeout(() => setSurligne(false), 2600);
+    return () => clearTimeout(m);
+  }, [mot]);
+  useEffect(() => {
+    if (!mot || !surligne) return;
+    const el = document.getElementById("mot-" + mot);
+    if (el) {
+      el.scrollIntoView({ block: "center" });
+      el.focus({ preventScroll: true });
+    }
+  }, [mot, surligne]);
+  const revenir = () => {
+    defilementAVenir = retour.y;
+  };
+  return /* @__PURE__ */ React.createElement("article", { className: "page lexique" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, retour ? /* @__PURE__ */ React.createElement("a", { href: retour.lien, className: "retour", onClick: revenir }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), retour.libelle) : /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement(BoutonConversations, { page: "lexique" })), /* @__PURE__ */ React.createElement("h1", null, "Lexique"), /* @__PURE__ */ React.createElement("p", { className: "chapo" }, "Les mots du parcours, expliqués simplement."), /* @__PURE__ */ React.createElement("label", { className: "recherche" }, /* @__PURE__ */ React.createElement(IcLoupe, { taille: 18 }), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "search",
@@ -516,7 +590,21 @@ function Lexique() {
       placeholder: "Chercher un mot",
       "aria-label": "Chercher un mot dans le lexique"
     }
-  )), liste.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "vide" }, "Aucun mot ne correspond à « ", filtre, " ». Essaie un mot plus court.") : /* @__PURE__ */ React.createElement("dl", null, liste.map(([m, d]) => /* @__PURE__ */ React.createElement("div", { key: m, className: "lexique-entree" }, /* @__PURE__ */ React.createElement("dt", null, m), /* @__PURE__ */ React.createElement("dd", null, fr(d))))));
+  )), liste.length === 0 ? /* @__PURE__ */ React.createElement("p", { className: "vide" }, "Aucun mot ne correspond à « ", filtre, " ». Essaie un mot plus court.") : /* @__PURE__ */ React.createElement("dl", null, liste.map(([m, d]) => {
+    const a = ancre(m), cible = a === mot;
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: m,
+        id: "mot-" + a,
+        tabIndex: cible ? -1 : void 0,
+        className: "lexique-entree" + (cible ? " lexique-cible" : "") + (cible && surligne ? " est-surligne" : "")
+      },
+      /* @__PURE__ */ React.createElement("dt", null, m),
+      /* @__PURE__ */ React.createElement("dd", null, fr(d)),
+      cible && retour && /* @__PURE__ */ React.createElement("a", { href: retour.lien, className: "lexique-retour", onClick: revenir }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), retour.libelle)
+    );
+  })));
 }
 const CLE_ROBOT = "cc101fr:robot:v1";
 const CLE_CONVERSATIONS = "cc101fr:robot-conversations:v1";
@@ -682,6 +770,8 @@ function Robot({ route }) {
   const [voirConsignes, setVoirConsignes] = useState(false);
   const [brouillon, setBrouillon] = useState(reglages.consignes);
   const plage = useRef(null), attente = useRef(null), fil = useRef(null), fenetre = useRef(null);
+  const extrait = conv ? conv.extrait : "";
+  const motsReperes = useMemo(() => reperer(extrait), [extrait]);
   const majReglages = (p) => setReglages((r) => {
     const n = { ...r, ...p };
     ecrireJson(CLE_ROBOT, n);
@@ -766,14 +856,14 @@ function Robot({ route }) {
     if (fil.current) fil.current.scrollTop = fil.current.scrollHeight;
   }, [conv, envoi, erreur, ouvert, vue, service]);
   if (!page) return null;
-  const nouvelle = (extrait) => {
+  const nouvelle = (extrait2) => {
     lireService();
     setConv({
       id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       page: cle,
       cours: page.cours,
       pageTitre: page.titre,
-      extrait: extrait || "",
+      extrait: extrait2 || "",
       creeLe: Date.now(),
       modifieLe: Date.now(),
       bienvenue: BIENVENUES[Math.floor(Math.random() * BIENVENUES.length)],
@@ -802,6 +892,9 @@ function Robot({ route }) {
     setErreur("");
     setQuestion("");
     setHumeur("arrive");
+  };
+  const allerAuLexique = () => {
+    if (route.vue === "lecon") retourLexique = { lien: location.hash || "#", libelle: `Retour à la leçon ${route.id}`, y: window.scrollY };
   };
   const envoyer = async (texte) => {
     const q = texte.trim();
@@ -884,7 +977,7 @@ function Robot({ route }) {
       onClick: () => majReglages({ consignes: brouillon.trim() })
     },
     consignesEnregistrees && reglages.consignes ? "Enregistré" : "Enregistrer"
-  ))), vue === "chat" && conv && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "robot-fil", ref: fil, "aria-live": "polite" }, /* @__PURE__ */ React.createElement("div", { className: "robot-bulle robot-de-robot" }, /* @__PURE__ */ React.createElement("p", null, fr(conv.bienvenue))), !service && /* @__PURE__ */ React.createElement("div", { className: "robot-bulle robot-de-robot robot-connexion" }, /* @__PURE__ */ React.createElement("p", null, fr("Pour te répondre, j’ai besoin d’être connecté à une IA. Ça se règle une seule fois, dans le carnet de révision :")), /* @__PURE__ */ React.createElement("ol", null, /* @__PURE__ */ React.createElement("li", null, fr("ouvre le panneau « Assistant intelligent » ;")), /* @__PURE__ */ React.createElement("li", null, fr("colle l’adresse HTTPS de ton service IA, le petit serveur qui garde ta clé à l’abri ;")), /* @__PURE__ */ React.createElement("li", null, fr("touche « Enregistrer et tester la connexion », puis reviens ici."))), /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-principal", href: "revisions.html" }, "Connecter une IA")), conv.messages.map((m, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "robot-bulle " + (m.role === "user" ? "robot-de-moi" : "robot-de-robot") }, m.role === "user" ? /* @__PURE__ */ React.createElement("p", null, m.t) : /* @__PURE__ */ React.createElement(TexteRobot, { t: m.t }))), envoi && /* @__PURE__ */ React.createElement("div", { className: "robot-attente", role: "status", "aria-label": "Robotto réfléchit" }, /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null)), erreur && /* @__PURE__ */ React.createElement("p", { className: "robot-erreur", role: "alert" }, fr(erreur))), service && /* @__PURE__ */ React.createElement("form", { className: "robot-saisie", onSubmit: (e) => {
+  ))), vue === "chat" && conv && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "robot-fil", ref: fil, "aria-live": "polite" }, /* @__PURE__ */ React.createElement("div", { className: "robot-bulle robot-de-robot" }, /* @__PURE__ */ React.createElement("p", null, fr(conv.bienvenue))), motsReperes.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "robot-bulle robot-de-robot robot-mots" }, /* @__PURE__ */ React.createElement("p", null, fr(motsReperes.length > 1 ? "Dans ton passage, j’ai repéré des mots du lexique. Touche-en un pour lire sa définition :" : "Dans ton passage, j’ai repéré un mot du lexique. Touche-le pour lire sa définition :")), /* @__PURE__ */ React.createElement("div", { className: "robot-mots-liste" }, motsReperes.map(([m]) => /* @__PURE__ */ React.createElement("a", { key: m, className: "robot-rapide robot-mot", href: "#lexique/" + ancre(m), onClick: allerAuLexique }, /* @__PURE__ */ React.createElement("span", null, m), /* @__PURE__ */ React.createElement(IcDroite, { taille: 16 }))))), !service && /* @__PURE__ */ React.createElement("div", { className: "robot-bulle robot-de-robot robot-connexion" }, /* @__PURE__ */ React.createElement("p", null, fr("Pour te répondre, j’ai besoin d’être connecté à une IA. Ça se règle une seule fois, dans le carnet de révision :")), /* @__PURE__ */ React.createElement("ol", null, /* @__PURE__ */ React.createElement("li", null, fr("ouvre le panneau « Assistant intelligent » ;")), /* @__PURE__ */ React.createElement("li", null, fr("colle l’adresse HTTPS de ton service IA, le petit serveur qui garde ta clé à l’abri ;")), /* @__PURE__ */ React.createElement("li", null, fr("touche « Enregistrer et tester la connexion », puis reviens ici."))), /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-principal", href: "revisions.html" }, "Connecter une IA")), conv.messages.map((m, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "robot-bulle " + (m.role === "user" ? "robot-de-moi" : "robot-de-robot") }, m.role === "user" ? /* @__PURE__ */ React.createElement("p", null, m.t) : /* @__PURE__ */ React.createElement(TexteRobot, { t: m.t }))), envoi && /* @__PURE__ */ React.createElement("div", { className: "robot-attente", role: "status", "aria-label": "Robotto réfléchit" }, /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null), /* @__PURE__ */ React.createElement("i", null)), erreur && /* @__PURE__ */ React.createElement("p", { className: "robot-erreur", role: "alert" }, fr(erreur))), service && /* @__PURE__ */ React.createElement("form", { className: "robot-saisie", onSubmit: (e) => {
     e.preventDefault();
     envoyer(question);
   } }, /* @__PURE__ */ React.createElement("div", { className: "robot-rapides" }, RAPIDES.map((r) => /* @__PURE__ */ React.createElement("button", { type: "button", key: r.l, className: "robot-rapide", disabled: envoi, onClick: () => envoyer(r.q) }, r.l))), /* @__PURE__ */ React.createElement("div", { className: "robot-ligne" }, /* @__PURE__ */ React.createElement(
@@ -935,11 +1028,17 @@ function App() {
   useEffect(() => {
     document.title = route.vue === "lecon" ? `${route.cours.LECONS[route.id - 1].titre} · ${route.cours.titre}` : route.vue === "quiz" ? `Quiz final · ${route.cours.titre}` : route.vue === "lexique" ? "Lexique · CL4UD3" : "CL4UD3";
   }, [route]);
+  useEffect(() => {
+    if (defilementAVenir == null) return;
+    const y = defilementAVenir;
+    defilementAVenir = null;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }, [route]);
   const cle = route.vue + (route.cours ? route.cours.id : "") + (route.id || "");
   let vue;
   if (route.vue === "lecon") vue = /* @__PURE__ */ React.createElement(Lecon, { cours: route.cours, id: route.id, etat, setEtat, toast });
   else if (route.vue === "quiz") vue = /* @__PURE__ */ React.createElement(Quiz, { cours: route.cours, etat, setEtat });
-  else if (route.vue === "lexique") vue = /* @__PURE__ */ React.createElement(Lexique, null);
+  else if (route.vue === "lexique") vue = /* @__PURE__ */ React.createElement(Lexique, { mot: route.mot });
   else vue = /* @__PURE__ */ React.createElement(Accueil, { etat, setEtat, toast });
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("a", { className: "lien-evitement", href: "#contenu", onClick: (e) => {
     e.preventDefault();

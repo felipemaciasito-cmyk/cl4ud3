@@ -27,6 +27,72 @@ const LEXIQUE = (() => {
     .sort((a, b) => a[0].localeCompare(b[0], "fr"));
 })();
 
+// Adresse d’un mot dans le lexique : « Dépôt (repo) » → #lexique/depot-repo.
+const sansAccents = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "");
+const ancre = (mot) => sansAccents(mot).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+// Repérage des mots du lexique dans un passage, pour Robotto. Formes cherchées : le mot sans
+// sa parenthèse, ce qu’il y a dans la parenthèse (« fenêtre de » devient « fenêtre de contexte »)
+// et les autres formes données en 3e élément de l’entrée. Accents et majuscules sont ignorés,
+// sauf pour les sigles (PR, CI…), cherchés en majuscules. Pluriels acceptés ; pour un mot
+// en -er, ses formes courantes (fusionne, poussé, linters…). Le mot le plus long l’emporte.
+const EXPRESSIONS_COURANTES = ["la main", "les mains"]; // « à la main » n’est pas la branche main
+const echapper = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function formesDu([mot, , autres]) {
+  const m = /^(.*?)\s*\((.*)\)$/.exec(mot);
+  const base = m ? m[1] : mot;
+  const formes = [base];
+  if (m) formes.push(/\sde$/.test(m[2]) ? m[2] + " " + base.toLowerCase() : m[2]);
+  return [...formes, ...(Array.isArray(autres) ? autres : [])];
+}
+
+function motifDe(forme) {
+  const f = sansAccents(forme).trim();
+  const sigle = f === f.toUpperCase() && /[A-Z]{2}/.test(f);
+  const mots = (sigle ? f : f.toLowerCase()).split(/\s+/);
+  const corps = mots.map((w) => {
+    if (sigle) return echapper(w) + "s?";
+    if (mots.length === 1 && /^[a-z]{3,}er$/.test(w)) return echapper(w.slice(0, -2)) + "(?:ers|er|ees|ee|es|e|ent|ez|ons|ant|ait|aient)";
+    return echapper(w) + "(?:s|x)?";
+  }).join("\\s+");
+  const lettre = sigle ? "A-Za-z0-9" : "a-z0-9";
+  return { sigle, re: new RegExp("(?:^|[^" + lettre + "])(" + corps + ")(?![" + lettre + "])", "g") };
+}
+
+const REPERES = LEXIQUE.map((e) => ({ e, motifs: formesDu(e).filter((x) => x && x.trim()).map(motifDe) }));
+
+function reperer(texte, max = 12) {
+  if (!texte) return [];
+  const t = sansAccents(texte);
+  let bas = t.toLowerCase();
+  for (const x of EXPRESSIONS_COURANTES) {
+    bas = bas.replace(new RegExp("(^|[^a-z0-9])" + echapper(x) + "(?![a-z0-9])", "g"), (m, a) => a + " ".repeat(m.length - a.length));
+  }
+  const trouves = [];
+  for (const { e, motifs } of REPERES) {
+    for (const { sigle, re } of motifs) {
+      const source = sigle ? t : bas;
+      re.lastIndex = 0;
+      for (let m = re.exec(source); m; m = re.exec(source)) {
+        const fin = m.index + m[0].length;
+        trouves.push({ e, debut: fin - m[1].length, fin });
+      }
+    }
+  }
+  // Le plus long d’abord : « Sous-agent » l’emporte sur « Agent », « GitHub Pages » sur « GitHub ».
+  trouves.sort((a, b) => (b.fin - b.debut) - (a.fin - a.debut) || a.debut - b.debut);
+  const gardes = [];
+  for (const x of trouves) if (!gardes.some((g) => x.debut < g.fin && g.debut < x.fin)) gardes.push(x);
+  const vus = new Set();
+  return gardes.sort((a, b) => a.debut - b.debut).map((x) => x.e)
+    .filter((e) => !vus.has(e[0]) && vus.add(e[0])).slice(0, max);
+}
+
+// D’où l’on vient quand Robotto ouvre le lexique, pour revenir au même endroit de la leçon.
+let retourLexique = null;    // { lien, libelle, y }
+let defilementAVenir = null; // position à rétablir après le retour
+
 // Adresses : #lecon-3 et #quiz pour le premier cours (les liens existants restent valables),
 // #<id du cours>/lecon-3 et #<id du cours>/quiz pour les suivants.
 function lien(c, page) {
@@ -112,7 +178,8 @@ function useEtat() {
 
 function lireRoute() {
   const h = location.hash.replace(/^#/, "");
-  if (h === "lexique") return { vue: "lexique" };
+  const lx = /^lexique(?:\/([a-z0-9-]+))?$/.exec(h);
+  if (lx) return { vue: "lexique", mot: lx[1] || null };
   const m = /^(?:([a-z0-9-]+)\/)?(quiz|lecon-(\d{1,3}))$/.exec(h);
   const c = m && (m[1] ? COURS.find((x) => x.id === m[1]) : PREMIER);
   if (c && m[2] === "quiz" && c.QUIZ.length) return { vue: "quiz", cours: c };
@@ -872,16 +939,42 @@ function Quiz({ cours, etat, setEtat }) {
 
 /* ---------------------------------------------------------------- lexique */
 
-function Lexique() {
+// mot : l\u2019ancre d\u2019un mot \u00e0 montrer (adresse #lexique/<ancre>), par exemple depuis Robotto.
+function Lexique({ mot }) {
   const [filtre, setFiltre] = useState("");
-  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const [retour] = useState(() => retourLexique);
+  const [surligne, setSurligne] = useState(false);
+  const norm = (s) => sansAccents(s).toLowerCase();
   const liste = useMemo(() => {
     const f = norm(filtre.trim());
     return f ? LEXIQUE.filter(([m, d]) => norm(m).includes(f) || norm(d).includes(f)) : LEXIQUE;
   }, [filtre]);
+
+  // Quitter le lexique oublie d\u2019o\u00f9 l\u2019on venait.
+  useEffect(() => () => { retourLexique = null; }, []);
+
+  // Arriver sur un mot : recherche vid\u00e9e, mot au centre de l\u2019\u00e9cran, surlign\u00e9 un instant.
+  useEffect(() => {
+    if (!mot) return;
+    setFiltre(""); setSurligne(true);
+    const m = setTimeout(() => setSurligne(false), 2600);
+    return () => clearTimeout(m);
+  }, [mot]);
+  useEffect(() => {
+    if (!mot || !surligne) return;
+    const el = document.getElementById("mot-" + mot);
+    if (el) { el.scrollIntoView({ block: "center" }); el.focus({ preventScroll: true }); }
+  }, [mot, surligne]);
+
+  const revenir = () => { defilementAVenir = retour.y; };
   return (
     <article className="page lexique">
-      <div className="lecon-haut"><a href="#" className="retour"><IcGauche taille={18} />Parcours</a><BoutonConversations page="lexique" /></div>
+      <div className="lecon-haut">
+        {retour
+          ? <a href={retour.lien} className="retour" onClick={revenir}><IcGauche taille={18} />{retour.libelle}</a>
+          : <a href="#" className="retour"><IcGauche taille={18} />Parcours</a>}
+        <BoutonConversations page="lexique" />
+      </div>
       <h1>Lexique</h1>
       <p className="chapo">Les mots du parcours, expliqués simplement.</p>
       <label className="recherche">
@@ -891,9 +984,18 @@ function Lexique() {
       </label>
       {liste.length === 0
         ? <p className="vide">Aucun mot ne correspond à « {filtre} ». Essaie un mot plus court.</p>
-        : <dl>{liste.map(([m, d]) => (
-            <div key={m} className="lexique-entree"><dt>{m}</dt><dd>{fr(d)}</dd></div>
-          ))}</dl>}
+        : <dl>{liste.map(([m, d]) => {
+            const a = ancre(m), cible = a === mot;
+            return (
+              <div key={m} id={"mot-" + a} tabIndex={cible ? -1 : undefined}
+                className={"lexique-entree" + (cible ? " lexique-cible" : "") + (cible && surligne ? " est-surligne" : "")}>
+                <dt>{m}</dt><dd>{fr(d)}</dd>
+                {cible && retour && (
+                  <a href={retour.lien} className="lexique-retour" onClick={revenir}><IcGauche taille={18} />{retour.libelle}</a>
+                )}
+              </div>
+            );
+          })}</dl>}
     </article>
   );
 }
@@ -1083,6 +1185,9 @@ function Robot({ route }) {
   const [voirConsignes, setVoirConsignes] = useState(false);
   const [brouillon, setBrouillon] = useState(reglages.consignes);
   const plage = useRef(null), attente = useRef(null), fil = useRef(null), fenetre = useRef(null);
+  // Mots du lexique dans le passage, recalculés à partir de la conversation (même rouverte).
+  const extrait = conv ? conv.extrait : "";
+  const motsReperes = useMemo(() => reperer(extrait), [extrait]);
 
   const majReglages = (p) => setReglages((r) => { const n = { ...r, ...p }; ecrireJson(CLE_ROBOT, n); return n; });
   const lireService = () => setService(String((lireJson(CLE_SERVICE_IA, {}) || {}).endpoint || ""));
@@ -1172,6 +1277,10 @@ function Robot({ route }) {
     try { document.getSelection().removeAllRanges(); } catch (e) {}
   };
   const rouvrir = (x) => { lireService(); setConv(x); setVue("chat"); setErreur(""); setQuestion(""); setHumeur("arrive"); };
+  // Vers un mot du lexique : on retient la leçon et la position, pour pouvoir y revenir.
+  const allerAuLexique = () => {
+    if (route.vue === "lecon") retourLexique = { lien: location.hash || "#", libelle: `Retour à la leçon ${route.id}`, y: window.scrollY };
+  };
 
   const envoyer = async (texte) => {
     const q = texte.trim();
@@ -1252,6 +1361,20 @@ function Robot({ route }) {
             <>
               <div className="robot-fil" ref={fil} aria-live="polite">
                 <div className="robot-bulle robot-de-robot"><p>{fr(conv.bienvenue)}</p></div>
+                {motsReperes.length > 0 && (
+                  <div className="robot-bulle robot-de-robot robot-mots">
+                    <p>{fr(motsReperes.length > 1
+                      ? "Dans ton passage, j’ai repéré des mots du lexique. Touche-en un pour lire sa définition :"
+                      : "Dans ton passage, j’ai repéré un mot du lexique. Touche-le pour lire sa définition :")}</p>
+                    <div className="robot-mots-liste">
+                      {motsReperes.map(([m]) => (
+                        <a key={m} className="robot-rapide robot-mot" href={"#lexique/" + ancre(m)} onClick={allerAuLexique}>
+                          <span>{m}</span><IcDroite taille={16} />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {!service && (
                   <div className="robot-bulle robot-de-robot robot-connexion">
                     <p>{fr("Pour te répondre, j’ai besoin d’être connecté à une IA. Ça se règle une seule fois, dans le carnet de révision :")}</p>
@@ -1363,11 +1486,19 @@ function App() {
       : "CL4UD3";
   }, [route]);
 
+  // Retour du lexique vers la leçon : rétablir la position à l’écran.
+  useEffect(() => {
+    if (defilementAVenir == null) return;
+    const y = defilementAVenir;
+    defilementAVenir = null;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }, [route]);
+
   const cle = route.vue + (route.cours ? route.cours.id : "") + (route.id || "");
   let vue;
   if (route.vue === "lecon") vue = <Lecon cours={route.cours} id={route.id} etat={etat} setEtat={setEtat} toast={toast} />;
   else if (route.vue === "quiz") vue = <Quiz cours={route.cours} etat={etat} setEtat={setEtat} />;
-  else if (route.vue === "lexique") vue = <Lexique />;
+  else if (route.vue === "lexique") vue = <Lexique mot={route.mot} />;
   else vue = <Accueil etat={etat} setEtat={setEtat} toast={toast} />;
 
   return (

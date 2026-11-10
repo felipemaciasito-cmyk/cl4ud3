@@ -109,9 +109,9 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   par cours. Un autre type de bloc ou d’exercice demande de modifier `app.jsx`, de régénérer `app.js` et de le signaler.
 - Quiz : 1 à 3 questions par nouvelle leçon, à la fin du `QUIZ` du cours, avec `l` = numéro de la
   leçon. 4 réponses plausibles, une seule juste ; varie sa position (`b`, de 0 à 3). `e` explique pourquoi.
-- Lexique : chaque terme nouveau qui resservira entre dans `LEXIQUE` (ordre alphabétique, une ou deux phrases
-  simples, sans mise en forme), dans le premier cours qui l’utilise. Ajoute-le aussi à `mots` dans la leçon qui le
-  présente : l’encadré « Les mots de la leçon » en reprend la définition. Un mot n’est listé qu’une fois dans le parcours.
+- Lexique : chaque terme nouveau qui resservira entre dans `LEXIQUE` (ordre alphabétique, une ou deux phrases simples, sans
+  mise en forme), dans le premier cours qui l’utilise, et dans `mots` de la leçon qui le présente (encadré « Les mots de la leçon »).
+  Un mot n’est listé qu’une fois. Robotto le repère dans une sélection ; 3e élément facultatif, ses autres formes : `["fusion"]`.
 
 ## 4. Pensé pour l’iPad
 
