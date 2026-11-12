@@ -783,3 +783,44 @@ main { max-width: 48rem; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ------------------------------------------------ renvois vers une leçon */
+/* « leçon 4 » dans un texte : zone à toucher agrandie à 44 px, sans bouger les lignes */
+.renvoi {
+  color: var(--lien); font-weight: 700; text-decoration: underline; text-decoration-thickness: 1px;
+  text-underline-offset: .18em; padding: .75em .2em; margin: 0 -.2em; border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.renvoi:focus-visible { outline: 2px solid var(--lien); outline-offset: -.55em; }
+html.renvoi-ouvert, html.renvoi-ouvert body { overflow: hidden; }
+.renvoi-calque { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+.renvoi-fond { position: absolute; inset: 0; background: rgba(8, 13, 25, .5); animation: renvoi-fondu .2s ease-out both; }
+.renvoi-panneau {
+  position: relative; display: flex; flex-direction: column; width: min(100%, 52rem);
+  height: calc(100% - env(safe-area-inset-top, 0px) - 2.25rem);
+  background: var(--fond); color: var(--encre); outline: none;
+  border-radius: var(--r-grand) var(--r-grand) 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, .28);
+  animation: renvoi-monte .3s cubic-bezier(.2, .8, .2, 1) both;
+}
+.renvoi-tete {
+  display: flex; align-items: center; gap: .5rem; padding: .7rem .75rem .7rem 1.25rem;
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px)); padding-right: max(.75rem, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--bord);
+}
+.renvoi-titres { flex: 1; min-width: 0; }
+.renvoi-cours { color: var(--discret); font-size: .9rem; }
+.renvoi-tete h2 { font-size: 1.2rem; line-height: 1.3; }
+.renvoi-precedent {
+  flex: none; display: inline-flex; align-items: center; gap: .3rem; min-height: 44px; padding: 0 .5rem 0 0;
+  border: 0; background: none; color: var(--lien); font: inherit; font-weight: 700; cursor: pointer;
+}
+.renvoi-fermer { flex: none; color: var(--encre); }
+.renvoi-corps {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  padding: 1.5rem max(1.25rem, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 2.5rem) max(1.25rem, env(safe-area-inset-left, 0px));
+}
+/* le passage visé par le renvoi */
+.passage-cible { background: var(--ambre-doux); box-shadow: 0 0 0 .6rem var(--ambre-doux); border-radius: var(--r-petit); }
+.exercice.passage-cible { box-shadow: 0 0 0 .6rem var(--ambre-doux), 0 0 0 .75rem var(--ambre-bord); }
+@keyframes renvoi-monte { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes renvoi-fondu { from { opacity: 0; } to { opacity: 1; } }

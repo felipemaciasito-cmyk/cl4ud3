@@ -6,8 +6,7 @@ français, à suivre dans l’ordre. Chaque cours a son fichier de contenu (`don
 modification de contenu** (cours, leçons, exercices, quiz, lexique). Elles valent aussi pour du
 contenu préparé ailleurs (dans le chat claude.ai, par exemple) : joins alors ce fichier à la conversation.
 
-Si une demande laisse un doute (où placer la leçon, suite du labo ou nouveau projet, source du
-contenu), pose la question avant d’écrire. Garde ce fichier sous 200 lignes (leçon 8).
+Si une demande laisse un doute (où placer la leçon, suite du labo ou nouveau projet, source du contenu), pose la question avant d’écrire. Garde ce fichier sous 200 lignes (leçon 8).
 
 ## Commandes et hooks
 
@@ -37,8 +36,9 @@ npx esbuild@0.24.0 app.jsx --format=esm --charset=utf8 --jsx-factory=React.creat
   réglages dans `cc101fr:robot:v1`) enregistrent ces numéros. Ces identifiants gardent l’ancien nom de l’appli
   (`cc101`) : ne les renomme pas en CL4UD3.
 - Place la leçon dans une section existante du cours, ou ajoute la section à la fin de son `SECTIONS`.
-- Une notion s’appuie sur celles déjà vues. N’utilise pas une notion pas encore expliquée ; renvoie à
-  la leçon qui l’explique : « (leçon 8) » dans le même cours, « (Claude Code 101, leçon 8) » sinon.
+- Une notion s’appuie sur celles déjà vues. N’utilise pas une notion pas encore expliquée ; renvoie à la leçon qui l’explique :
+  « (leçon 8) » dans le même cours, « (Claude Code 101, leçon 8) » sinon, « (leçon 8, exercice) » pour son exercice.
+  Mets le renvoi juste après la notion : l’appli l’ouvre dans un panneau, sur le passage où la leçon citée la met en gras.
 - Garde le vocabulaire déjà installé : session, mode Plan, « Accepter automatiquement les
   modifications », dépôt, branche, diff, commit, PR, fusionner, contexte, sous-agent, skill, hook.
 - Ne contredis pas une leçon précédente. Si une information a changé (Claude Code évolue vite),

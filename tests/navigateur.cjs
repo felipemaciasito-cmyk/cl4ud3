@@ -53,6 +53,10 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
   const { COURS } = await import(pathToFileURL(path.join(RACINE, "cours.js")).href);
   const PREMIER = COURS[0];
   const lien = (c, page) => "#" + (c.id === PREMIER.id ? "" : c.id + "/") + page;
+  // Renvois « (leçon 4) » dans les textes affichés d’une leçon (pas dans les prompts ni les titres).
+  const renvoisDe = (o, cle = "") => typeof o === "string"
+    ? (["p", "p2", "titre", "resume", "texte"].includes(cle) ? 0 : (o.match(/\((?:[^()]*?,\s*)?leçon \d+(?:,\s*exercice)?\)/g) || []).length)
+    : o && typeof o === "object" ? Object.entries(o).reduce((n, [k, v]) => n + (/^cfg/.test(k) ? 0 : renvoisDe(v, Array.isArray(o) ? cle : k)), 0) : 0;
   const srv = await serveur();
   const BASE = `http://127.0.0.1:${srv.address().port}/`;
   const b = await chromium.launch();
@@ -102,11 +106,11 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
           prompts: document.querySelectorAll(".exercice figure.prompt").length, etapes: document.querySelectorAll(".exercice-etapes > li").length,
           depl: document.querySelectorAll(".exercice details.depliable").length, classer: !!document.querySelector(".classer"),
           suivant: [...document.querySelectorAll(".lecon-pied a")].pop()?.getAttribute("href"),
-          mots: document.querySelectorAll(".mots dt").length,
+          mots: document.querySelectorAll(".mots dt").length, renvois: document.querySelectorAll("main .renvoi").length,
         }));
         const attendu = { h1: l.titre, obj: l.objectifs.length, ret: l.retenir.length, h2: compte("h2"), h3: compte("h3"), ul: compte("liste"),
           tab: compte("tableau"), code: compte("code"), prompts, etapes: (ex.etapes || []).length, depl: (ex.details || []).length,
-          classer: !!(ex.classer && c.CLASSER && c.PHASES), mots: (l.mots || []).length,
+          classer: !!(ex.classer && c.CLASSER && c.PHASES), mots: (l.mots || []).length, renvois: renvoisDe(l),
           suivant: l.id < c.LECONS.length ? lien(c, "lecon-" + (l.id + 1)) : c.QUIZ.length ? lien(c, "quiz") : undefined };
         const ecarts = Object.keys(attendu).filter((k) => attendu[k] !== undefined && vu[k] !== attendu[k]).map((k) => `${k} : ${vu[k]} au lieu de ${attendu[k]}`);
         ok(`${n} « ${l.titre} » : tout le contenu s’affiche`, !ecarts.length, ecarts.join(" ; "));
@@ -364,6 +368,46 @@ const petitesCibles = (p) => p.evaluate(() => [...document.querySelectorAll("a, 
       ok("Supprimer une conversation", (await p.locator(".robot-conv").count()) === 1 && ((await stockage(p, "cc101fr:robot-conversations:v1")) || []).length === 1);
       await p.locator(".robot-tout-supprimer").tap(); await attendre(p, 300);
       ok("Tout supprimer sur la page", (await p.locator(".robot-conv").count()) === 0 && ((await stockage(p, "cc101fr:robot-conversations:v1")) || []).length === 0);
+      ok("Pas de défilement horizontal", !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)));
+      ok("Aucune erreur JavaScript", !p.erreurs.length, p.erreurs.join(" | "));
+      await ctx.close();
+    }
+
+    // ---------- 7 bis. Renvois vers une leçon, ouverts dans un panneau
+    titre("Renvois vers une leçon");
+    {
+      const { ctx, p } = await ouvrir();
+      const EA = COURS.find((x) => x.id === "claude-code-en-action");
+      await aller(p, BASE + lien(EA, "lecon-7"));
+      const renvoi = p.locator("main li", { hasText: "/code-review" }).locator(".renvoi");
+      await renvoi.scrollIntoViewIfNeeded(); await attendre(p, 200);
+      const yAvant = await p.evaluate(() => Math.round(scrollY));
+      await renvoi.tap(); await attendre(p, 800);
+      const panneau = () => p.evaluate(() => {
+        const pan = document.querySelector(".renvoi-panneau"), c = document.querySelector(".renvoi-corps");
+        const cible = c && c.querySelector(".passage-cible"), r = cible && cible.getBoundingClientRect(), z = c && c.getBoundingClientRect();
+        return { titre: pan && pan.querySelector(".renvoi-tete h2").textContent, cible: cible ? cible.textContent : "",
+          visible: !!r && r.top >= z.top && r.bottom <= z.bottom, y: Math.round(scrollY) };
+      });
+      const vu = await panneau();
+      ok("« leçon 7 » ouvre un panneau sur la leçon citée", vu.titre === "Leçon 7 : Relire le code", JSON.stringify(vu.titre));
+      ok("Le passage visé est mis en avant et en vue", /\/code-review/.test(vu.cible) && vu.visible, vu.cible.slice(0, 60));
+      ok("La leçon en cours n’a pas bougé dessous", vu.y === yAvant, `${vu.y} au lieu de ${yAvant}`);
+      const petits = await petitesCibles(p);
+      ok("Panneau : zones à toucher d’au moins 44 px", !petits.length, petits.slice(0, 3).join(", "));
+      await p.locator(".renvoi-corps .renvoi").first().tap(); await attendre(p, 800);
+      const vu2 = await panneau();
+      ok("Un renvoi dans le panneau y ouvre l’autre leçon, sur son passage", vu2.titre === "Leçon 5 : Explorer, planifier, coder, valider" && /un test/.test(vu2.cible) && vu2.visible, JSON.stringify(vu2.titre));
+      await p.locator(".renvoi-precedent").tap(); await attendre(p, 500);
+      ok("« Précédent » revient à la leçon d’avant", (await panneau()).titre === "Leçon 7 : Relire le code" && (await p.locator(".renvoi-precedent").count()) === 0);
+      await p.locator(".renvoi-fermer").tap(); await attendre(p, 500);
+      const apres = await p.evaluate(() => ({ ouvert: !!document.querySelector(".renvoi-panneau"), y: Math.round(scrollY), focus: document.activeElement && document.activeElement.className }));
+      ok("✕ ferme le panneau : même endroit, focus sur le renvoi", !apres.ouvert && apres.y === yAvant && apres.focus === "renvoi", JSON.stringify({ ...apres, yAvant }));
+      await aller(p, BASE + lien(EA, "lecon-1"));
+      await p.locator(".exercice .renvoi").first().tap(); await attendre(p, 800);
+      ok("« leçon 12, exercice » met en avant l’exercice", await p.evaluate(() => !!document.querySelector(".renvoi-corps .exercice.passage-cible")));
+      await p.touchscreen.tap(200, 6); await attendre(p, 500);
+      ok("Toucher le fond grisé ferme le panneau", (await p.locator(".renvoi-panneau").count()) === 0);
       ok("Pas de défilement horizontal", !(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)));
       ok("Aucune erreur JavaScript", !p.erreurs.length, p.erreurs.join(" | "));
       await ctx.close();
