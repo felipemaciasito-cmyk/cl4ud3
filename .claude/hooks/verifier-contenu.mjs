@@ -108,6 +108,14 @@ async function verifier() {
     if (brut && /\*\*|`/.test(t)) err.push(ou + " : ** ou ` affiché tel quel" + debut);
     if (/\bcliqu/i.test(t)) err.push(ou + " : écrire « touche », pas « clique »");
     if (/\p{Extended_Pictographic}/u.test(t)) err.push(ou + " : pas d’emoji");
+    // Renvois « (leçon 4) », « (Claude Code 101, leçon 7) », « (leçon 12, exercice) » : l’appli les
+    // ouvre dans un panneau, ils doivent viser un cours et une leçon qui existent.
+    const coursDuTexte = COURS.filter((c) => ou.startsWith(c.titre)).sort((a, b) => b.titre.length - a.titre.length)[0];
+    for (const [r, nom, num] of t.matchAll(/\((?:([^()]*?),\s*)?leçon (\d+)(?:,\s*exercice)?\)/g)) {
+      const cible = nom ? COURS.find((c) => c.titre === nom.trim()) : coursDuTexte;
+      if (!cible) err.push(ou + " : renvoi " + r + " : « " + nom + " » n’est pas le titre d’un cours");
+      else if (!cible.LECONS?.[+num - 1]) err.push(ou + " : renvoi " + r + " vers une leçon qui n’existe pas dans " + cible.titre);
+    }
   });
 
   // Chaque fichier de contenu doit être déclaré dans cours.js et gardé pour le hors ligne dans sw.js.

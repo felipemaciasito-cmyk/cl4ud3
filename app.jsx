@@ -8,7 +8,7 @@
 import { React, createRoot } from "./vendor-react.js";
 import { COURS } from "./cours.js";
 
-const { useState, useEffect, useRef, useMemo, useCallback, useId } = React;
+const { useState, useEffect, useRef, useMemo, useCallback, useId, useContext } = React;
 
 /* ---------------------------------------------------------------- cours */
 
@@ -63,6 +63,13 @@ function motifDe(forme) {
 const REPERES = LEXIQUE.map((e) => ({ e, motifs: formesDu(e).filter((x) => x && x.trim()).map(motifDe) }));
 
 function reperer(texte, max = 12) {
+  const vus = new Set();
+  return reperesDans(texte).sort((a, b) => a.debut - b.debut).map((x) => x.e)
+    .filter((e) => !vus.has(e[0]) && vus.add(e[0])).slice(0, max);
+}
+
+// Les mots du lexique d’un texte, avec leur place : { e, debut, fin }, du plus proche de la fin au plus loin.
+function reperesDans(texte) {
   if (!texte) return [];
   const t = sansAccents(texte);
   let bas = t.toLowerCase();
@@ -84,9 +91,82 @@ function reperer(texte, max = 12) {
   trouves.sort((a, b) => (b.fin - b.debut) - (a.fin - a.debut) || a.debut - b.debut);
   const gardes = [];
   for (const x of trouves) if (!gardes.some((g) => x.debut < g.fin && g.debut < x.fin)) gardes.push(x);
-  const vus = new Set();
-  return gardes.sort((a, b) => a.debut - b.debut).map((x) => x.e)
-    .filter((e) => !vus.has(e[0]) && vus.add(e[0])).slice(0, max);
+  return gardes.sort((a, b) => b.fin - a.fin);
+}
+
+// Renvois vers une leçon : « (leçon 4) », « (Claude Code 101, leçon 7) », « (leçon 12, exercice) ».
+// Même motif que tests/regles-import.mjs. Touché, le renvoi ouvre la leçon dans un panneau,
+// sur le passage qui définit la notion citée juste avant (trouverPassage).
+const RE_RENVOI = /^\((?:([^()]*?),\s*)?leçon (\d+)(,\s*exercice)?\)$/;
+const CoursCourant = React.createContext(null); // le cours de la leçon affichée, pour les renvois sans nom de cours
+const relaisRenvoi = new EventTarget();          // « ouvrir » : { cours, id, contexte, exercice, depuis }
+
+// Passages d’une leçon, avec le repère data-passage de leur élément affiché.
+function passagesDe(l) {
+  const ps = [];
+  l.blocs.forEach((b, i) => {
+    if (b.type === "liste") b.items.forEach((x, j) => ps.push({ id: `b${i}.${j}`, t: x }));
+    else if (b.type === "tableau") ps.push({ id: `b${i}`, t: [...b.entetes, ...b.lignes.flat()].join(" · ") });
+    else if (b.type === "code") ps.push({ id: `b${i}`, t: "`" + (b.titre || "") + "` " + b.texte });
+    else ps.push({ id: `b${i}`, t: b.t, titre: b.type !== "p" });
+  });
+  const ex = l.exercice || {};
+  if (ex.intro) ps.push({ id: "ex.intro", t: ex.intro, ex: true });
+  (ex.etapes || []).forEach((e, k) => ps.push({ id: "ex." + k, t: [e.t, e.p, e.a, e.p2].filter((x) => typeof x === "string").join(" "), ex: true }));
+  // Un titre de partie se juge avec le passage qui le suit, et se montre avec lui.
+  ps.forEach((p, k) => { const s = p.titre && ps[k + 1]; p.juge = s ? p.t + " " + s.t : p.t; p.suivant = s ? s.id : null; });
+  return ps;
+}
+
+const MOTS_VIDES = new Set("dans pour avec sans mais elle elles leur leurs plus tout tous toute cette cela comme quand sont fait faire peut une des les aux qui que quoi dont est sur par ses son lui ils".split(" "));
+const motsDe = (s) => sansAccents(s).toLowerCase().replace(/[*`]/g, "").split(/[^a-z0-9]+/)
+  .filter((w) => w.length > 3 && !MOTS_VIDES.has(w)).map((w) => w.replace(/[sx]$/, ""));
+const grasDe = (t) => [...String(t || "").matchAll(/\*\*([^*]+)\*\*/g)].map((m) => m[1]);
+const codesDe = (t) => [...String(t || "").matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+
+// Le passage d’une leçon que vise un renvoi, d’après le texte écrit juste avant lui.
+// Renvoie les repères à mettre en avant (vide : le haut de la leçon).
+function trouverPassage(contexte, l, exercice) {
+  if (exercice) return ["ex"];
+  const ps = passagesDe(l);
+  const proche = String(contexte || "").slice(-160);
+  // 1. La notion de la dernière proposition, si la leçon la définit en gras (la plus proche du renvoi d’abord).
+  const proposition = proche.split(/[.;:!?](?=\s)/).pop();
+  const cles = reperesDans(proposition);
+  const np = sansAccents(proposition).toLowerCase();
+  let meilleur = null;
+  for (const p of ps) {
+    if (p.ex) continue;
+    for (const g of grasDe(p.t)) {
+      const cg = new Set(reperesDans(g).map((x) => x.e[0]));
+      const k = cles.find((c) => cg.has(c.e[0]));
+      let fin = k ? k.fin : -1;
+      const ng = sansAccents(g).toLowerCase().replace(/`/g, "").replace(/[.:]+$/, "").trim();
+      if (!k && ng.length > 3) {
+        const re = new RegExp("(^|[^a-z0-9])" + echapper(ng) + "(?![a-z0-9])", "g");
+        for (let m = re.exec(np); m; m = re.exec(np)) fin = m.index + m[0].length;
+      }
+      if (fin >= 0 && (!meilleur || fin > meilleur.fin)) meilleur = { p, fin };
+    }
+  }
+  if (meilleur) return [meilleur.p.id];
+  // 2. Sinon, le passage le plus proche par le sens : mots du lexique, `code` (plus fort) et mots de la phrase en commun.
+  const clesProches = new Set(reperesDans(proche).map((x) => x.e[0]));
+  const codes = new Set(codesDe(proche).filter((c) => c.length > 3));
+  const mots = motsDe(proche).slice(-15);
+  let best = null, score = 0;
+  for (const p of ps) {
+    const kp = new Set(reperesDans(p.juge).map((x) => x.e[0]));
+    const w = new Set(motsDe(p.juge));
+    let s = 0;
+    for (const c of clesProches) if (kp.has(c)) s += 3;
+    for (const c of new Set(codesDe(p.juge))) if (codes.has(c)) s += 5;
+    for (const m of mots) if (w.has(m)) s += 1;
+    if (p.titre && reperesDans(p.t).some((x) => clesProches.has(x.e[0]))) s += 3;
+    if (s > score) { best = p; score = s; } // à égalité, le premier passage de la leçon
+  }
+  if (best && score >= 3) return best.suivant ? [best.id, best.suivant] : [best.id];
+  return [];
 }
 
 // D’où l’on vient quand Robotto ouvre le lexique, pour revenir au même endroit de la leçon.
@@ -238,17 +318,40 @@ function fr(s) {
     .replace(/ ([?!:;])/g, "\u00A0$1");
 }
 
-// Mise en forme : **gras**, *italique*, `code`
+// Mise en forme : **gras**, *italique*, `code`, et renvois « (leçon 4) » touchables.
 function Texte({ t }) {
-  const morceaux = fr(t).split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`)/g);
+  const cours = useContext(CoursCourant);
+  const morceaux = fr(t).split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`|\((?:[^()]*?,\s*)?leçon \d+(?:,\s*exercice)?\))/g);
   return (
     <>
       {morceaux.map((m, i) => {
-        if (m.length > 4 && m.startsWith("**") && m.endsWith("**")) return <strong key={i}>{m.slice(2, -2)}</strong>;
+        if (m.length > 4 && m.startsWith("**") && m.endsWith("**")) return (
+          <strong key={i}>{m.slice(2, -2).split(/(`[^`]+`)/g).map((x, j) => (x.length > 2 && x.startsWith("`") && x.endsWith("`") ? <code key={j}>{x.slice(1, -1)}</code> : x))}</strong>
+        );
         if (m.length > 2 && m.startsWith("`") && m.endsWith("`")) return <code key={i}>{m.slice(1, -1)}</code>;
         if (m.length > 2 && m.startsWith("*") && m.endsWith("*")) return <em key={i}>{m.slice(1, -1)}</em>;
+        if (m.startsWith("(") && RE_RENVOI.test(m)) return <Renvoi key={i} texte={m} cours={cours} contexte={morceaux.slice(0, i).join("")} />;
         return m;
       })}
+    </>
+  );
+}
+
+// « (Claude Code 101, leçon 7) » : « leçon 7 » devient un lien vers la leçon, ouvert dans le panneau.
+function Renvoi({ texte, cours, contexte }) {
+  const [, nom, num, exercice] = RE_RENVOI.exec(texte);
+  const cible = nom ? COURS.find((c) => c.titre === nom.trim()) : cours;
+  const id = +num;
+  if (!cours || !cible || !cible.LECONS[id - 1]) return texte;
+  const ouvrir = (e) => {
+    e.preventDefault();
+    relaisRenvoi.dispatchEvent(new CustomEvent("ouvrir", { detail: { cours: cible, id, contexte, exercice: !!exercice, depuis: e.currentTarget } }));
+  };
+  return (
+    <>
+      {"(" + (nom ? nom + ", " : "")}
+      <a className="renvoi" href={lien(cible, `lecon-${id}`)} onClick={ouvrir} aria-haspopup="dialog">leçon {id}{exercice ? ", exercice" : ""}</a>
+      {")"}
     </>
   );
 }
@@ -378,9 +481,9 @@ function Depliable({ titre, children }) {
   );
 }
 
-function Tableau({ entetes, lignes }) {
+function Tableau({ entetes, lignes, repere }) {
   return (
-    <div className="tableau">
+    <div className="tableau" data-passage={repere}>
       <table>
         <thead><tr>{entetes.map((e, i) => <th key={i} scope="col"><Texte t={e} /></th>)}</tr></thead>
         <tbody>
@@ -395,19 +498,20 @@ function Tableau({ entetes, lignes }) {
   );
 }
 
-function Bloc({ b }) {
+// repere : « b3 » pour le 4e bloc (« b3.1 » pour le 2e élément d’une liste), visé par les renvois.
+function Bloc({ b, repere }) {
   switch (b.type) {
-    case "h2": return <h2><Texte t={b.t} /></h2>;
-    case "h3": return <h3><Texte t={b.t} /></h3>;
-    case "liste": return <ul>{b.items.map((x, i) => <li key={i}><Texte t={x} /></li>)}</ul>;
-    case "tableau": return <Tableau entetes={b.entetes} lignes={b.lignes} />;
+    case "h2": return <h2 data-passage={repere}><Texte t={b.t} /></h2>;
+    case "h3": return <h3 data-passage={repere}><Texte t={b.t} /></h3>;
+    case "liste": return <ul data-passage={repere}>{b.items.map((x, i) => <li key={i} data-passage={repere + "." + i}><Texte t={x} /></li>)}</ul>;
+    case "tableau": return <Tableau entetes={b.entetes} lignes={b.lignes} repere={repere} />;
     case "code": return (
-      <figure className="code">
+      <figure className="code" data-passage={repere}>
         {b.titre && <figcaption>{b.titre}</figcaption>}
         <pre><code>{b.texte}</code></pre>
       </figure>
     );
-    default: return <p><Texte t={b.t} /></p>;
+    default: return <p data-passage={repere}><Texte t={b.t} /></p>;
   }
 }
 
@@ -691,15 +795,16 @@ function Classer({ cours, lessonId }) {
 }
 
 function Exercice({ ex, cours, lessonId }) {
+  const idTitre = useId();
   return (
-    <section className="exercice" aria-labelledby="titre-exercice">
-      <h2 id="titre-exercice">Exercice</h2>
-      {ex.intro && <p><Texte t={ex.intro} /></p>}
+    <section className="exercice" aria-labelledby={idTitre} data-passage="ex">
+      <h2 id={idTitre}>Exercice</h2>
+      {ex.intro && <p data-passage="ex.intro"><Texte t={ex.intro} /></p>}
       {ex.classer && cours.CLASSER && cours.PHASES && <Classer cours={cours} lessonId={lessonId} />}
       {ex.etapes.length > 0 && (
         <ol className="exercice-etapes">
           {ex.etapes.map((e, i) => (
-            <li key={i}>
+            <li key={i} data-passage={"ex." + i}>
               <span className="exercice-num" aria-hidden="true">{i + 1}</span>
               <div className="exercice-contenu">
                 <p><Texte t={e.t} /></p>
@@ -720,6 +825,109 @@ function Exercice({ ex, cours, lessonId }) {
         </Depliable>
       ))}
     </section>
+  );
+}
+
+// Le corps d’une leçon, commun à sa page et au panneau des renvois. Les renvois sans nom de
+// cours, comme « (leçon 4) », visent le cours de cette leçon (CoursCourant).
+function CorpsLecon({ cours, lecon: l, avantExercice }) {
+  return (
+    <CoursCourant.Provider value={cours}>
+      <section className="carte objectifs">
+        <h2>Dans cette leçon</h2>
+        <ul>{l.objectifs.map((o, i) => <li key={i}><Texte t={o} /></li>)}</ul>
+      </section>
+      <MotsLecon mots={l.mots} />
+
+      <div className="contenu">{l.blocs.map((b, i) => <Bloc key={i} b={b} repere={"b" + i} />)}</div>
+
+      <aside className="retenir">
+        <h2>À retenir</h2>
+        <ul>{l.retenir.map((r, i) => <li key={i}><Texte t={r} /></li>)}</ul>
+      </aside>
+
+      {avantExercice}
+      <Exercice ex={l.exercice} cours={cours} lessonId={l.id} />
+    </CoursCourant.Provider>
+  );
+}
+
+// Panneau des renvois : la leçon citée, par-dessus la leçon en cours, défilée jusqu’au passage
+// visé et mis en avant. Le fermer ramène exactement où l’on était : la page dessous n’a pas bougé.
+// Un renvoi touché dans le panneau y ouvre l’autre leçon (bouton « Précédent » pour revenir).
+function PanneauRenvoi() {
+  const [pile, setPile] = useState([]); // [{ cours, id, cibles, depuis, k }]
+  const corps = useRef(null), panneau = useRef(null);
+  const idTitre = useId();
+  const haut = pile[pile.length - 1];
+  const ouvert = pile.length > 0;
+
+  useEffect(() => {
+    const ouvrir = (e) => {
+      const { cours, id, contexte, exercice, depuis } = e.detail;
+      const cibles = trouverPassage(contexte, cours.LECONS[id - 1], exercice);
+      setPile((p) => [...p, { cours, id, cibles, depuis, k: Date.now() + Math.random() }]);
+    };
+    const changement = () => setPile([]); // changer de page ferme le panneau
+    relaisRenvoi.addEventListener("ouvrir", ouvrir);
+    window.addEventListener("hashchange", changement);
+    return () => { relaisRenvoi.removeEventListener("ouvrir", ouvrir); window.removeEventListener("hashchange", changement); };
+  }, []);
+
+  const fermer = () => {
+    const lien = pile[0] && pile[0].depuis;
+    setPile([]);
+    if (lien && lien.isConnected) requestAnimationFrame(() => lien.focus({ preventScroll: true }));
+  };
+
+  // Page dessous bloquée, touche Échap pour fermer.
+  useEffect(() => {
+    if (!ouvert) return;
+    const racine = document.documentElement;
+    racine.classList.add("renvoi-ouvert");
+    const f = (e) => { if (e.key === "Escape") fermer(); };
+    window.addEventListener("keydown", f);
+    return () => { racine.classList.remove("renvoi-ouvert"); window.removeEventListener("keydown", f); };
+  });
+
+  // À chaque leçon ouverte : passage visé mis en avant et centré dans le panneau.
+  useEffect(() => {
+    if (!haut || !corps.current) return;
+    const c = corps.current;
+    c.scrollTop = 0;
+    if (panneau.current) panneau.current.focus({ preventScroll: true });
+    const els = haut.cibles.map((x) => c.querySelector(`[data-passage="${x}"]`)).filter(Boolean);
+    els.forEach((el) => el.classList.add("passage-cible"));
+    if (!els.length) return;
+    const zone = c.getBoundingClientRect(), a = els[0].getBoundingClientRect(), b = els[els.length - 1].getBoundingClientRect();
+    c.scrollTop += a.top - zone.top - Math.max(24, (zone.height - (b.bottom - a.top)) / 2);
+  }, [haut && haut.k]);
+
+  if (!haut) return null;
+  const l = haut.cours.LECONS[haut.id - 1];
+  return (
+    <div className="renvoi-calque">
+      <div className="renvoi-fond" onClick={fermer} aria-hidden="true" />
+      <section className="renvoi-panneau" role="dialog" aria-modal="true" aria-labelledby={idTitre} tabIndex={-1} ref={panneau}>
+        <header className="renvoi-tete">
+          {pile.length > 1 && (
+            <button type="button" className="renvoi-precedent" onClick={() => setPile((p) => p.slice(0, -1))}>
+              <IcGauche taille={18} />Précédent
+            </button>
+          )}
+          <div className="renvoi-titres">
+            <p className="renvoi-cours">{haut.cours.titre} · {haut.cours.SECTIONS[l.section]}</p>
+            <h2 id={idTitre}>Leçon {haut.id} : {l.titre}</h2>
+          </div>
+          <button type="button" className="bouton-icone renvoi-fermer" onClick={fermer} aria-label="Fermer et revenir à ta leçon">
+            <IcX taille={22} />
+          </button>
+        </header>
+        <div className="renvoi-corps" ref={corps} key={haut.k}>
+          <CorpsLecon cours={haut.cours} lecon={l} />
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -748,21 +956,9 @@ function Lecon({ cours: c, id, etat, setEtat, toast }) {
       <h1>{l.titre}</h1>
       <p className="lecon-meta">Leçon {id} sur {TOTAL}, environ {l.duree} minutes exercice compris</p>
 
-      <section className="carte objectifs">
-        <h2>Dans cette leçon</h2>
-        <ul>{l.objectifs.map((o, i) => <li key={i}><Texte t={o} /></li>)}</ul>
-      </section>
-      <MotsLecon mots={l.mots} />
-
-      <div className="contenu">{l.blocs.map((b, i) => <Bloc key={i} b={b} />)}</div>
-
-      <aside className="retenir">
-        <h2>À retenir</h2>
-        <ul>{l.retenir.map((r, i) => <li key={i}><Texte t={r} /></li>)}</ul>
-      </aside>
-
-      <p className="lecon-meta"><a className="bouton bouton-contour" href={`revisions.html?course=${c.id}&lesson=${id}`}>Noter une difficulté sur cette leçon</a></p>
-      <Exercice ex={l.exercice} cours={c} lessonId={id} />
+      <CorpsLecon cours={c} lecon={l} avantExercice={
+        <p className="lecon-meta"><a className="bouton bouton-contour" href={`revisions.html?course=${c.id}&lesson=${id}`}>Noter une difficulté sur cette leçon</a></p>
+      } />
 
       <nav className="lecon-pied" aria-label="Navigation entre les leçons">
         {id > 1
@@ -1512,6 +1708,7 @@ function App() {
         {message && <div className="toast" key={message.k}><IcCheck taille={18} strokeWidth="3" />{message.t}</div>}
       </div>
       <Robot route={route} />
+      <PanneauRenvoi />
     </>
   );
 }
