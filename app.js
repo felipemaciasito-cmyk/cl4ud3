@@ -1,6 +1,6 @@
 import { React, createRoot } from "./vendor-react.js";
 import { COURS } from "./cours.js";
-const { useState, useEffect, useRef, useMemo, useCallback, useId } = React;
+const { useState, useEffect, useRef, useMemo, useCallback, useId, useContext } = React;
 const PREMIER = COURS[0];
 const PLUSIEURS = COURS.length > 1;
 const TOTAL_LECONS = COURS.reduce((n, c) => n + c.LECONS.length, 0);
@@ -34,6 +34,10 @@ function motifDe(forme) {
 }
 const REPERES = LEXIQUE.map((e) => ({ e, motifs: formesDu(e).filter((x) => x && x.trim()).map(motifDe) }));
 function reperer(texte, max = 12) {
+  const vus = /* @__PURE__ */ new Set();
+  return reperesDans(texte).sort((a, b) => a.debut - b.debut).map((x) => x.e).filter((e) => !vus.has(e[0]) && vus.add(e[0])).slice(0, max);
+}
+function reperesDans(texte) {
   if (!texte) return [];
   const t = sansAccents(texte);
   let bas = t.toLowerCase();
@@ -54,8 +58,75 @@ function reperer(texte, max = 12) {
   trouves.sort((a, b) => b.fin - b.debut - (a.fin - a.debut) || a.debut - b.debut);
   const gardes = [];
   for (const x of trouves) if (!gardes.some((g) => x.debut < g.fin && g.debut < x.fin)) gardes.push(x);
-  const vus = /* @__PURE__ */ new Set();
-  return gardes.sort((a, b) => a.debut - b.debut).map((x) => x.e).filter((e) => !vus.has(e[0]) && vus.add(e[0])).slice(0, max);
+  return gardes.sort((a, b) => b.fin - a.fin);
+}
+const RE_RENVOI = /^\((?:([^()]*?),\s*)?leçon (\d+)(,\s*exercice)?\)$/;
+const CoursCourant = React.createContext(null);
+const relaisRenvoi = new EventTarget();
+function passagesDe(l) {
+  const ps = [];
+  l.blocs.forEach((b, i) => {
+    if (b.type === "liste") b.items.forEach((x, j) => ps.push({ id: `b${i}.${j}`, t: x }));
+    else if (b.type === "tableau") ps.push({ id: `b${i}`, t: [...b.entetes, ...b.lignes.flat()].join(" · ") });
+    else if (b.type === "code") ps.push({ id: `b${i}`, t: "`" + (b.titre || "") + "` " + b.texte });
+    else ps.push({ id: `b${i}`, t: b.t, titre: b.type !== "p" });
+  });
+  const ex = l.exercice || {};
+  if (ex.intro) ps.push({ id: "ex.intro", t: ex.intro, ex: true });
+  (ex.etapes || []).forEach((e, k) => ps.push({ id: "ex." + k, t: [e.t, e.p, e.a, e.p2].filter((x) => typeof x === "string").join(" "), ex: true }));
+  ps.forEach((p, k) => {
+    const s = p.titre && ps[k + 1];
+    p.juge = s ? p.t + " " + s.t : p.t;
+    p.suivant = s ? s.id : null;
+  });
+  return ps;
+}
+const MOTS_VIDES = new Set("dans pour avec sans mais elle elles leur leurs plus tout tous toute cette cela comme quand sont fait faire peut une des les aux qui que quoi dont est sur par ses son lui ils".split(" "));
+const motsDe = (s) => sansAccents(s).toLowerCase().replace(/[*`]/g, "").split(/[^a-z0-9]+/).filter((w) => w.length > 3 && !MOTS_VIDES.has(w)).map((w) => w.replace(/[sx]$/, ""));
+const grasDe = (t) => [...String(t || "").matchAll(/\*\*([^*]+)\*\*/g)].map((m) => m[1]);
+const codesDe = (t) => [...String(t || "").matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+function trouverPassage(contexte, l, exercice) {
+  if (exercice) return ["ex"];
+  const ps = passagesDe(l);
+  const proche = String(contexte || "").slice(-160);
+  const proposition = proche.split(/[.;:!?](?=\s)/).pop();
+  const cles = reperesDans(proposition);
+  const np = sansAccents(proposition).toLowerCase();
+  let meilleur = null;
+  for (const p of ps) {
+    if (p.ex) continue;
+    for (const g of grasDe(p.t)) {
+      const cg = new Set(reperesDans(g).map((x) => x.e[0]));
+      const k = cles.find((c) => cg.has(c.e[0]));
+      let fin = k ? k.fin : -1;
+      const ng = sansAccents(g).toLowerCase().replace(/`/g, "").replace(/[.:]+$/, "").trim();
+      if (!k && ng.length > 3) {
+        const re = new RegExp("(^|[^a-z0-9])" + echapper(ng) + "(?![a-z0-9])", "g");
+        for (let m = re.exec(np); m; m = re.exec(np)) fin = m.index + m[0].length;
+      }
+      if (fin >= 0 && (!meilleur || fin > meilleur.fin)) meilleur = { p, fin };
+    }
+  }
+  if (meilleur) return [meilleur.p.id];
+  const clesProches = new Set(reperesDans(proche).map((x) => x.e[0]));
+  const codes = new Set(codesDe(proche).filter((c) => c.length > 3));
+  const mots = motsDe(proche).slice(-15);
+  let best = null, score = 0;
+  for (const p of ps) {
+    const kp = new Set(reperesDans(p.juge).map((x) => x.e[0]));
+    const w = new Set(motsDe(p.juge));
+    let s = 0;
+    for (const c of clesProches) if (kp.has(c)) s += 3;
+    for (const c of new Set(codesDe(p.juge))) if (codes.has(c)) s += 5;
+    for (const m of mots) if (w.has(m)) s += 1;
+    if (p.titre && reperesDans(p.t).some((x) => clesProches.has(x.e[0]))) s += 3;
+    if (s > score) {
+      best = p;
+      score = s;
+    }
+  }
+  if (best && score >= 3) return best.suivant ? [best.id, best.suivant] : [best.id];
+  return [];
 }
 let retourLexique = null;
 let defilementAVenir = null;
@@ -204,13 +275,26 @@ function fr(s) {
   return String(s).replace(/« /g, "« ").replace(/ »/g, " »").replace(/ ([?!:;])/g, " $1");
 }
 function Texte({ t }) {
-  const morceaux = fr(t).split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`)/g);
+  const cours = useContext(CoursCourant);
+  const morceaux = fr(t).split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`|\((?:[^()]*?,\s*)?leçon \d+(?:,\s*exercice)?\))/g);
   return /* @__PURE__ */ React.createElement(React.Fragment, null, morceaux.map((m, i) => {
-    if (m.length > 4 && m.startsWith("**") && m.endsWith("**")) return /* @__PURE__ */ React.createElement("strong", { key: i }, m.slice(2, -2));
+    if (m.length > 4 && m.startsWith("**") && m.endsWith("**")) return /* @__PURE__ */ React.createElement("strong", { key: i }, m.slice(2, -2).split(/(`[^`]+`)/g).map((x, j) => x.length > 2 && x.startsWith("`") && x.endsWith("`") ? /* @__PURE__ */ React.createElement("code", { key: j }, x.slice(1, -1)) : x));
     if (m.length > 2 && m.startsWith("`") && m.endsWith("`")) return /* @__PURE__ */ React.createElement("code", { key: i }, m.slice(1, -1));
     if (m.length > 2 && m.startsWith("*") && m.endsWith("*")) return /* @__PURE__ */ React.createElement("em", { key: i }, m.slice(1, -1));
+    if (m.startsWith("(") && RE_RENVOI.test(m)) return /* @__PURE__ */ React.createElement(Renvoi, { key: i, texte: m, cours, contexte: morceaux.slice(0, i).join("") });
     return m;
   }));
+}
+function Renvoi({ texte, cours, contexte }) {
+  const [, nom, num, exercice] = RE_RENVOI.exec(texte);
+  const cible = nom ? COURS.find((c) => c.titre === nom.trim()) : cours;
+  const id = +num;
+  if (!cours || !cible || !cible.LECONS[id - 1]) return texte;
+  const ouvrir = (e) => {
+    e.preventDefault();
+    relaisRenvoi.dispatchEvent(new CustomEvent("ouvrir", { detail: { cours: cible, id, contexte, exercice: !!exercice, depuis: e.currentTarget } }));
+  };
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, "(" + (nom ? nom + ", " : ""), /* @__PURE__ */ React.createElement("a", { className: "renvoi", href: lien(cible, `lecon-${id}`), onClick: ouvrir, "aria-haspopup": "dialog" }, "leçon ", id, exercice ? ", exercice" : ""), ")");
 }
 function copierTexte(txt) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -300,23 +384,23 @@ function Prompt({ texte, cfg }) {
 function Depliable({ titre, children }) {
   return /* @__PURE__ */ React.createElement("details", { className: "depliable" }, /* @__PURE__ */ React.createElement("summary", null, /* @__PURE__ */ React.createElement("span", null, titre), /* @__PURE__ */ React.createElement(IcChevron, { taille: 18 })), /* @__PURE__ */ React.createElement("div", { className: "depliable-corps" }, children));
 }
-function Tableau({ entetes, lignes }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "tableau" }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, entetes.map((e, i) => /* @__PURE__ */ React.createElement("th", { key: i, scope: "col" }, /* @__PURE__ */ React.createElement(Texte, { t: e }))))), /* @__PURE__ */ React.createElement("tbody", null, lignes.map((l, i) => /* @__PURE__ */ React.createElement("tr", { key: i }, l.map((c, j) => j === 0 && entetes[0] === "" ? /* @__PURE__ */ React.createElement("th", { key: j, scope: "row" }, /* @__PURE__ */ React.createElement(Texte, { t: c })) : /* @__PURE__ */ React.createElement("td", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: c }))))))));
+function Tableau({ entetes, lignes, repere }) {
+  return /* @__PURE__ */ React.createElement("div", { className: "tableau", "data-passage": repere }, /* @__PURE__ */ React.createElement("table", null, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, entetes.map((e, i) => /* @__PURE__ */ React.createElement("th", { key: i, scope: "col" }, /* @__PURE__ */ React.createElement(Texte, { t: e }))))), /* @__PURE__ */ React.createElement("tbody", null, lignes.map((l, i) => /* @__PURE__ */ React.createElement("tr", { key: i }, l.map((c, j) => j === 0 && entetes[0] === "" ? /* @__PURE__ */ React.createElement("th", { key: j, scope: "row" }, /* @__PURE__ */ React.createElement(Texte, { t: c })) : /* @__PURE__ */ React.createElement("td", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: c }))))))));
 }
-function Bloc({ b }) {
+function Bloc({ b, repere }) {
   switch (b.type) {
     case "h2":
-      return /* @__PURE__ */ React.createElement("h2", null, /* @__PURE__ */ React.createElement(Texte, { t: b.t }));
+      return /* @__PURE__ */ React.createElement("h2", { "data-passage": repere }, /* @__PURE__ */ React.createElement(Texte, { t: b.t }));
     case "h3":
-      return /* @__PURE__ */ React.createElement("h3", null, /* @__PURE__ */ React.createElement(Texte, { t: b.t }));
+      return /* @__PURE__ */ React.createElement("h3", { "data-passage": repere }, /* @__PURE__ */ React.createElement(Texte, { t: b.t }));
     case "liste":
-      return /* @__PURE__ */ React.createElement("ul", null, b.items.map((x, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: x }))));
+      return /* @__PURE__ */ React.createElement("ul", { "data-passage": repere }, b.items.map((x, i) => /* @__PURE__ */ React.createElement("li", { key: i, "data-passage": repere + "." + i }, /* @__PURE__ */ React.createElement(Texte, { t: x }))));
     case "tableau":
-      return /* @__PURE__ */ React.createElement(Tableau, { entetes: b.entetes, lignes: b.lignes });
+      return /* @__PURE__ */ React.createElement(Tableau, { entetes: b.entetes, lignes: b.lignes, repere });
     case "code":
-      return /* @__PURE__ */ React.createElement("figure", { className: "code" }, b.titre && /* @__PURE__ */ React.createElement("figcaption", null, b.titre), /* @__PURE__ */ React.createElement("pre", null, /* @__PURE__ */ React.createElement("code", null, b.texte)));
+      return /* @__PURE__ */ React.createElement("figure", { className: "code", "data-passage": repere }, b.titre && /* @__PURE__ */ React.createElement("figcaption", null, b.titre), /* @__PURE__ */ React.createElement("pre", null, /* @__PURE__ */ React.createElement("code", null, b.texte)));
     default:
-      return /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: b.t }));
+      return /* @__PURE__ */ React.createElement("p", { "data-passage": repere }, /* @__PURE__ */ React.createElement(Texte, { t: b.t }));
   }
 }
 function MotsLecon({ mots }) {
@@ -438,7 +522,64 @@ function Classer({ cours, lessonId }) {
   })), /* @__PURE__ */ React.createElement("p", { className: "classer-score" }, justes, " sur ", CLASSER.length, " bien placées"));
 }
 function Exercice({ ex, cours, lessonId }) {
-  return /* @__PURE__ */ React.createElement("section", { className: "exercice", "aria-labelledby": "titre-exercice" }, /* @__PURE__ */ React.createElement("h2", { id: "titre-exercice" }, "Exercice"), ex.intro && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: ex.intro })), ex.classer && cours.CLASSER && cours.PHASES && /* @__PURE__ */ React.createElement(Classer, { cours, lessonId }), ex.etapes.length > 0 && /* @__PURE__ */ React.createElement("ol", { className: "exercice-etapes" }, ex.etapes.map((e, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement("span", { className: "exercice-num", "aria-hidden": "true" }, i + 1), /* @__PURE__ */ React.createElement("div", { className: "exercice-contenu" }, /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.t })), e.p && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p, cfg: e.cfg }), !e.p && e.cfg && /* @__PURE__ */ React.createElement(ConfigurationEtape, { cfg: e.cfg }), e.a && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.a })), e.p2 && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p2, cfg: e.cfg2 }))))), ex.note && /* @__PURE__ */ React.createElement("p", { className: "note" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.note })), (ex.details || []).map((d, i) => /* @__PURE__ */ React.createElement(Depliable, { key: i, titre: d.titre }, d.t.map((x, j) => /* @__PURE__ */ React.createElement("p", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: x }))), d.p && /* @__PURE__ */ React.createElement(Prompt, { texte: d.p, cfg: d.cfg }))));
+  const idTitre = useId();
+  return /* @__PURE__ */ React.createElement("section", { className: "exercice", "aria-labelledby": idTitre, "data-passage": "ex" }, /* @__PURE__ */ React.createElement("h2", { id: idTitre }, "Exercice"), ex.intro && /* @__PURE__ */ React.createElement("p", { "data-passage": "ex.intro" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.intro })), ex.classer && cours.CLASSER && cours.PHASES && /* @__PURE__ */ React.createElement(Classer, { cours, lessonId }), ex.etapes.length > 0 && /* @__PURE__ */ React.createElement("ol", { className: "exercice-etapes" }, ex.etapes.map((e, i) => /* @__PURE__ */ React.createElement("li", { key: i, "data-passage": "ex." + i }, /* @__PURE__ */ React.createElement("span", { className: "exercice-num", "aria-hidden": "true" }, i + 1), /* @__PURE__ */ React.createElement("div", { className: "exercice-contenu" }, /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.t })), e.p && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p, cfg: e.cfg }), !e.p && e.cfg && /* @__PURE__ */ React.createElement(ConfigurationEtape, { cfg: e.cfg }), e.a && /* @__PURE__ */ React.createElement("p", null, /* @__PURE__ */ React.createElement(Texte, { t: e.a })), e.p2 && /* @__PURE__ */ React.createElement(Prompt, { texte: e.p2, cfg: e.cfg2 }))))), ex.note && /* @__PURE__ */ React.createElement("p", { className: "note" }, /* @__PURE__ */ React.createElement(Texte, { t: ex.note })), (ex.details || []).map((d, i) => /* @__PURE__ */ React.createElement(Depliable, { key: i, titre: d.titre }, d.t.map((x, j) => /* @__PURE__ */ React.createElement("p", { key: j }, /* @__PURE__ */ React.createElement(Texte, { t: x }))), d.p && /* @__PURE__ */ React.createElement(Prompt, { texte: d.p, cfg: d.cfg }))));
+}
+function CorpsLecon({ cours, lecon: l, avantExercice }) {
+  return /* @__PURE__ */ React.createElement(CoursCourant.Provider, { value: cours }, /* @__PURE__ */ React.createElement("section", { className: "carte objectifs" }, /* @__PURE__ */ React.createElement("h2", null, "Dans cette leçon"), /* @__PURE__ */ React.createElement("ul", null, l.objectifs.map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: o }))))), /* @__PURE__ */ React.createElement(MotsLecon, { mots: l.mots }), /* @__PURE__ */ React.createElement("div", { className: "contenu" }, l.blocs.map((b, i) => /* @__PURE__ */ React.createElement(Bloc, { key: i, b, repere: "b" + i }))), /* @__PURE__ */ React.createElement("aside", { className: "retenir" }, /* @__PURE__ */ React.createElement("h2", null, "À retenir"), /* @__PURE__ */ React.createElement("ul", null, l.retenir.map((r, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: r }))))), avantExercice, /* @__PURE__ */ React.createElement(Exercice, { ex: l.exercice, cours, lessonId: l.id }));
+}
+function PanneauRenvoi() {
+  const [pile, setPile] = useState([]);
+  const corps = useRef(null), panneau = useRef(null);
+  const idTitre = useId();
+  const haut = pile[pile.length - 1];
+  const ouvert = pile.length > 0;
+  useEffect(() => {
+    const ouvrir = (e) => {
+      const { cours, id, contexte, exercice, depuis } = e.detail;
+      const cibles = trouverPassage(contexte, cours.LECONS[id - 1], exercice);
+      setPile((p) => [...p, { cours, id, cibles, depuis, k: Date.now() + Math.random() }]);
+    };
+    const changement = () => setPile([]);
+    relaisRenvoi.addEventListener("ouvrir", ouvrir);
+    window.addEventListener("hashchange", changement);
+    return () => {
+      relaisRenvoi.removeEventListener("ouvrir", ouvrir);
+      window.removeEventListener("hashchange", changement);
+    };
+  }, []);
+  const fermer = () => {
+    const lien2 = pile[0] && pile[0].depuis;
+    setPile([]);
+    if (lien2 && lien2.isConnected) requestAnimationFrame(() => lien2.focus({ preventScroll: true }));
+  };
+  useEffect(() => {
+    if (!ouvert) return;
+    const racine = document.documentElement;
+    racine.classList.add("renvoi-ouvert");
+    const f = (e) => {
+      if (e.key === "Escape") fermer();
+    };
+    window.addEventListener("keydown", f);
+    return () => {
+      racine.classList.remove("renvoi-ouvert");
+      window.removeEventListener("keydown", f);
+    };
+  });
+  useEffect(() => {
+    if (!haut || !corps.current) return;
+    const c = corps.current;
+    c.scrollTop = 0;
+    if (panneau.current) panneau.current.focus({ preventScroll: true });
+    const els = haut.cibles.map((x) => c.querySelector(`[data-passage="${x}"]`)).filter(Boolean);
+    els.forEach((el) => el.classList.add("passage-cible"));
+    if (!els.length) return;
+    const zone = c.getBoundingClientRect(), a = els[0].getBoundingClientRect(), b = els[els.length - 1].getBoundingClientRect();
+    c.scrollTop += a.top - zone.top - Math.max(24, (zone.height - (b.bottom - a.top)) / 2);
+  }, [haut && haut.k]);
+  if (!haut) return null;
+  const l = haut.cours.LECONS[haut.id - 1];
+  return /* @__PURE__ */ React.createElement("div", { className: "renvoi-calque" }, /* @__PURE__ */ React.createElement("div", { className: "renvoi-fond", onClick: fermer, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("section", { className: "renvoi-panneau", role: "dialog", "aria-modal": "true", "aria-labelledby": idTitre, tabIndex: -1, ref: panneau }, /* @__PURE__ */ React.createElement("header", { className: "renvoi-tete" }, pile.length > 1 && /* @__PURE__ */ React.createElement("button", { type: "button", className: "renvoi-precedent", onClick: () => setPile((p) => p.slice(0, -1)) }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Précédent"), /* @__PURE__ */ React.createElement("div", { className: "renvoi-titres" }, /* @__PURE__ */ React.createElement("p", { className: "renvoi-cours" }, haut.cours.titre, " · ", haut.cours.SECTIONS[l.section]), /* @__PURE__ */ React.createElement("h2", { id: idTitre }, "Leçon ", haut.id, " : ", l.titre)), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton-icone renvoi-fermer", onClick: fermer, "aria-label": "Fermer et revenir à ta leçon" }, /* @__PURE__ */ React.createElement(IcX, { taille: 22 }))), /* @__PURE__ */ React.createElement("div", { className: "renvoi-corps", ref: corps, key: haut.k }, /* @__PURE__ */ React.createElement(CorpsLecon, { cours: haut.cours, lecon: l }))));
 }
 function Lecon({ cours: c, id, etat, setEtat, toast }) {
   const l = c.LECONS[id - 1];
@@ -454,7 +595,7 @@ function Lecon({ cours: c, id, etat, setEtat, toast }) {
     if (!fait) toast(id === TOTAL ? c.QUIZ.length ? "Dernière leçon terminée. Place au quiz !" : "Dernière leçon terminée" : `Leçon ${id} terminée`);
   };
   const classeSuite = "bouton " + (fait ? "bouton-principal" : "bouton-contour");
-  return /* @__PURE__ */ React.createElement("article", { className: "page lecon" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement("span", { className: "lecon-section" }, PLUSIEURS ? `${c.titre} · ${c.SECTIONS[l.section]}` : c.SECTIONS[l.section]), /* @__PURE__ */ React.createElement(BoutonConversations, { page: `${c.id}/lecon-${id}` })), /* @__PURE__ */ React.createElement(Pastilles, { c, id, faites }), /* @__PURE__ */ React.createElement("h1", null, l.titre), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, "Leçon ", id, " sur ", TOTAL, ", environ ", l.duree, " minutes exercice compris"), /* @__PURE__ */ React.createElement("section", { className: "carte objectifs" }, /* @__PURE__ */ React.createElement("h2", null, "Dans cette leçon"), /* @__PURE__ */ React.createElement("ul", null, l.objectifs.map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: o }))))), /* @__PURE__ */ React.createElement(MotsLecon, { mots: l.mots }), /* @__PURE__ */ React.createElement("div", { className: "contenu" }, l.blocs.map((b, i) => /* @__PURE__ */ React.createElement(Bloc, { key: i, b }))), /* @__PURE__ */ React.createElement("aside", { className: "retenir" }, /* @__PURE__ */ React.createElement("h2", null, "À retenir"), /* @__PURE__ */ React.createElement("ul", null, l.retenir.map((r, i) => /* @__PURE__ */ React.createElement("li", { key: i }, /* @__PURE__ */ React.createElement(Texte, { t: r }))))), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: `revisions.html?course=${c.id}&lesson=${id}` }, "Noter une difficulté sur cette leçon")), /* @__PURE__ */ React.createElement(Exercice, { ex: l.exercice, cours: c, lessonId: id }), /* @__PURE__ */ React.createElement("nav", { className: "lecon-pied", "aria-label": "Navigation entre les leçons" }, id > 1 ? /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: lien(c, `lecon-${id - 1}`) }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Précédente")) : /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: "#" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Parcours")), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-fait" + (fait ? " est-fait" : ""), onClick: basculer, "aria-pressed": fait }, /* @__PURE__ */ React.createElement("span", { className: "coche", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" })), fait ? "Leçon terminée" : "Marquer comme terminée"), id < TOTAL ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, `lecon-${id + 1}`) }, /* @__PURE__ */ React.createElement("span", null, "Suivante"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : c.QUIZ.length ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, "quiz") }, /* @__PURE__ */ React.createElement("span", null, "Quiz final"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : suivant ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(suivant, "lecon-1") }, /* @__PURE__ */ React.createElement("span", null, "Cours suivant"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: "#" }, /* @__PURE__ */ React.createElement("span", null, "Parcours"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 }))));
+  return /* @__PURE__ */ React.createElement("article", { className: "page lecon" }, /* @__PURE__ */ React.createElement("div", { className: "lecon-haut" }, /* @__PURE__ */ React.createElement("a", { href: "#", className: "retour" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), "Parcours"), /* @__PURE__ */ React.createElement("span", { className: "lecon-section" }, PLUSIEURS ? `${c.titre} · ${c.SECTIONS[l.section]}` : c.SECTIONS[l.section]), /* @__PURE__ */ React.createElement(BoutonConversations, { page: `${c.id}/lecon-${id}` })), /* @__PURE__ */ React.createElement(Pastilles, { c, id, faites }), /* @__PURE__ */ React.createElement("h1", null, l.titre), /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, "Leçon ", id, " sur ", TOTAL, ", environ ", l.duree, " minutes exercice compris"), /* @__PURE__ */ React.createElement(CorpsLecon, { cours: c, lecon: l, avantExercice: /* @__PURE__ */ React.createElement("p", { className: "lecon-meta" }, /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: `revisions.html?course=${c.id}&lesson=${id}` }, "Noter une difficulté sur cette leçon")) }), /* @__PURE__ */ React.createElement("nav", { className: "lecon-pied", "aria-label": "Navigation entre les leçons" }, id > 1 ? /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: lien(c, `lecon-${id - 1}`) }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Précédente")) : /* @__PURE__ */ React.createElement("a", { className: "bouton bouton-contour", href: "#" }, /* @__PURE__ */ React.createElement(IcGauche, { taille: 18 }), /* @__PURE__ */ React.createElement("span", null, "Parcours")), /* @__PURE__ */ React.createElement("button", { type: "button", className: "bouton bouton-fait" + (fait ? " est-fait" : ""), onClick: basculer, "aria-pressed": fait }, /* @__PURE__ */ React.createElement("span", { className: "coche", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" })), fait ? "Leçon terminée" : "Marquer comme terminée"), id < TOTAL ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, `lecon-${id + 1}`) }, /* @__PURE__ */ React.createElement("span", null, "Suivante"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : c.QUIZ.length ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(c, "quiz") }, /* @__PURE__ */ React.createElement("span", null, "Quiz final"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : suivant ? /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: lien(suivant, "lecon-1") }, /* @__PURE__ */ React.createElement("span", null, "Cours suivant"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 })) : /* @__PURE__ */ React.createElement("a", { className: classeSuite, href: "#" }, /* @__PURE__ */ React.createElement("span", null, "Parcours"), /* @__PURE__ */ React.createElement(IcDroite, { taille: 18 }))));
 }
 function Quiz({ cours, etat, setEtat }) {
   const { QUIZ, LECONS } = cours;
@@ -1043,6 +1184,6 @@ function App() {
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("a", { className: "lien-evitement", href: "#contenu", onClick: (e) => {
     e.preventDefault();
     document.getElementById("contenu").focus();
-  } }, "Aller au contenu"), /* @__PURE__ */ React.createElement(Barre, { etat, setEtat, route }), /* @__PURE__ */ React.createElement("main", { id: "contenu", tabIndex: -1 }, /* @__PURE__ */ React.createElement("div", { className: "entree", key: cle }, vue)), /* @__PURE__ */ React.createElement("div", { className: "toast-zone", "aria-live": "polite" }, message && /* @__PURE__ */ React.createElement("div", { className: "toast", key: message.k }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" }), message.t)), /* @__PURE__ */ React.createElement(Robot, { route }));
+  } }, "Aller au contenu"), /* @__PURE__ */ React.createElement(Barre, { etat, setEtat, route }), /* @__PURE__ */ React.createElement("main", { id: "contenu", tabIndex: -1 }, /* @__PURE__ */ React.createElement("div", { className: "entree", key: cle }, vue)), /* @__PURE__ */ React.createElement("div", { className: "toast-zone", "aria-live": "polite" }, message && /* @__PURE__ */ React.createElement("div", { className: "toast", key: message.k }, /* @__PURE__ */ React.createElement(IcCheck, { taille: 18, strokeWidth: "3" }), message.t)), /* @__PURE__ */ React.createElement(Robot, { route }), /* @__PURE__ */ React.createElement(PanneauRenvoi, null));
 }
 createRoot(document.getElementById("app")).render(/* @__PURE__ */ React.createElement(App, null));

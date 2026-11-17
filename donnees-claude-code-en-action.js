@@ -76,7 +76,7 @@ export const LECONS = [
       { type: "p", t: "Avec `/goal`, tu décris à quoi ressemble « terminé », et Claude enchaîne les tours jusqu’à ce que ce soit vrai. Un tour, c’est une réponse complète de Claude, avec toutes ses actions, avant qu’il te rende la main. Après chaque tour, un second modèle, l’**évaluateur**, vérifie si ta condition est remplie. Claude ne s’arrête donc pas la première fois qu’il croit avoir fini. `/goal clear` annule l’objectif." },
       { type: "p", t: "L’évaluateur ne lance rien et ne lit aucun fichier : il lit seulement la conversation. Ta condition doit donc se prouver par ce que Claude affiche. « `node --test` réussit et sa sortie complète est affichée » marche. « Le code est propre » ne marche pas." },
       { type: "h3", t: "La commande /loop : relancer à intervalle" },
-      { type: "p", t: "`/loop` relance une demande à intervalle régulier, par exemple pour surveiller des tests qui tournent sur GitHub (leçon 7) et agir quand ils finissent. Une boucle à intervalle fixe s’arrête quand tu le demandes, ou au bout de sept jours. Elle vit dans la session : pour un travail régulier sans session ouverte, il y a les tâches planifiées (leçon 6)." },
+      { type: "p", t: "`/loop` relance une demande à intervalle régulier, par exemple pour surveiller des tests qui tournent dans GitHub Actions (leçon 7) et agir quand ils finissent. Une boucle à intervalle fixe s’arrête quand tu le demandes, ou au bout de sept jours. Elle vit dans la session : pour un travail régulier sans session ouverte, il y a les tâches planifiées (leçon 6)." },
       { type: "h2", t: "Travailler en parallèle sans collision" },
       { type: "p", t: "Deux sessions qui modifient les mêmes fichiers au même moment se gênent. Sur ordinateur, la solution s’appelle un **worktree** : une copie de travail séparée du dépôt pour chaque session. Un fichier `.worktreeinclude` dit quels fichiers recopier dans chaque copie quand git ne les suit pas, par exemple des réglages propres à ta machine." },
       { type: "p", t: "Sur le web, tu as déjà cette séparation : chaque session travaille dans sa propre copie du dépôt et pousse sa propre branche. Les conflits (deux changements incompatibles sur les mêmes lignes) n’apparaissent qu’au moment de fusionner, et GitHub te les signale." },
@@ -88,7 +88,7 @@ export const LECONS = [
       "/goal fait continuer Claude jusqu’à une condition prouvée dans la conversation.",
     ],
     exercice: {
-      intro: "On reprend `SPECIFICODE` là où Claude Code 101 l’a laissé (Claude Code 101, leçon 12). Nouvelle fonctionnalité : les totaux du mois en cours, au-dessus de la liste.",
+      intro: "On reprend `SPECIFICODE` là où Claude Code 101 l’a laissé (Claude Code 101, leçon 12, exercice). Nouvelle fonctionnalité : les totaux du mois en cours, au-dessus de la liste.",
       etapes: [
         { t: "Nouvelle session sur `SPECIFICODE`, en mode **Plan** :", p: "Lis d’abord le code de l’appli et ses tests. Je veux afficher au-dessus de la liste les totaux du mois en cours : km, euros et euros par km. Propose un plan : les fichiers touchés, la fonction de calcul à ajouter et les tests à écrire dans le fichier de test existant. Respecte CLAUDE.md. Ne modifie rien.", cfg: { session: "Nouvelle session", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
         { t: "Lis le plan en entier. Demande ce qui manque, par exemple :", p: "Affiche ces totaux dans un encadré, avec le nom du mois en français, comme Novembre 2026.", cfg: { session: "Même session que l’étape 1", depot: "SPECIFICODE", branche: "Aucune", autorisations: "Plan" } },
@@ -247,7 +247,7 @@ export const LECONS = [
       { type: "p", t: "Il juge l’intention, pas la justesse : il vérifie que l’action ne dépasse pas ta demande, pas que le code est juste. Si Claude écrit un calcul faux, rien de dangereux ne se passe : le classifieur laisse faire. D’où le duo à retenir : le mode Auto surveille ce que Claude essaie de faire pendant le travail, et un hook `Stop` qui lance les tests vérifie que le code marche à la fin (leçon 5)." },
       { type: "h2", t: "Les modes pour le travail sans témoin" },
       { type: "liste", items: [
-        "**Ne pas demander** : pour un travail automatique où personne ne peut répondre, comme l’**intégration continue** (des vérifications lancées automatiquement à chaque changement du code, leçon 7) ou un script de nuit. Ce qui demanderait ton accord est refusé d’office, et le travail ne reste pas bloqué à attendre une réponse.",
+        "**Ne pas demander** : pour un travail automatique où personne ne peut répondre, comme l’**intégration continue** ou un script de nuit. L’intégration continue, ce sont des vérifications lancées automatiquement à chaque changement du code (leçon 7). Ce qui demanderait ton accord est refusé d’office, et le travail ne reste pas bloqué à attendre une réponse.",
         "**Contourner les permissions** : seulement dans un **conteneur** ou une machine virtuelle, c’est-à-dire un ordinateur isolé et jetable, où une erreur ne peut rien abîmer d’important.",
         "Ces deux modes ne sont pas proposés sur le web. Les tâches planifiées, elles, démarrent en mode Auto quand il est disponible (leçon 6).",
       ] },

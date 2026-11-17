@@ -68,7 +68,7 @@ for (const r of REF) {
 }
 
 // 3. Les nouvelles leçons respectent CLAUDE.md.
-const renvoi = /\((?:([^()]*?),\s*)?leçon (\d+)\)/g;
+const renvoi = /\((?:([^()]*?),\s*)?leçon (\d+)(?:,\s*exercice)?\)/g;
 const interdits = /\b(?:ctrl|cmd|alt)\s*\+|⌘|clic droit|survol/i;
 for (const c of COURS) {
   const r = REF.find((x) => x.id === c.id);
